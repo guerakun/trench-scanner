@@ -303,8 +303,8 @@ function gtPlan(mode) {
   const dex = (n, d) => `/networks/${n}/dexes/${d}/pools?include=base_token&sort=h24_tx_count_desc&page=1`;
   const pads = [dex("solana", "pump-fun"), dex("bsc", "four-meme"), dex("solana", "stonkfun")];
   if (mode === "fresh") return [newP("solana"), newP("bsc"), newP("robinhood"), ...pads];
-  if (mode === "early") return [newP("solana"), ...pads, trend("solana", "5m"), newP("bsc"), newP("robinhood"), trend("bsc", "5m"), trend("robinhood", "5m"), sort("solana", "h24_tx_count_desc")];
-  if (mode === "recovery") return [trend("solana", "24h"), sort("solana", "h24_volume_usd_desc"), trend("bsc", "24h"), sort("bsc", "h24_volume_usd_desc"), trend("robinhood", "24h"), sort("robinhood", "h24_volume_usd_desc"), sort("solana", "h24_volume_usd_desc", 2), trend("solana", "6h"), sort("solana", "h24_tx_count_desc"), sort("bsc", "h24_tx_count_desc")];
+  if (mode === "early") return [newP("solana"), newP("bsc"), newP("robinhood"), ...pads, trend("solana", "5m"), trend("bsc", "5m"), trend("robinhood", "5m"), sort("solana", "h24_tx_count_desc")];
+  if (mode === "recovery") return [trend("solana", "24h"), trend("bsc", "24h"), trend("robinhood", "24h"), sort("solana", "h24_volume_usd_desc"), sort("bsc", "h24_volume_usd_desc"), sort("robinhood", "h24_volume_usd_desc"), sort("solana", "h24_volume_usd_desc", 2), trend("solana", "6h"), sort("solana", "h24_tx_count_desc"), sort("bsc", "h24_tx_count_desc")];
   return [newP("solana"), newP("bsc"), newP("robinhood"), pads[0], pads[1], trend("solana"), trend("bsc"), trend("robinhood"), pads[2], sort("solana", "h24_volume_usd_desc"), sort("solana", "h24_tx_count_desc"), sort("bsc", "h24_tx_count_desc"), sort("robinhood", "h24_tx_count_desc")];
 }
 
@@ -392,7 +392,7 @@ async function getJSON(url, init = {}, timeout) {
 // GeckoTerminal: serialized with spacing, short cache, stop on repeated 429.
 const gtCache = new Map();
 let gtLast = 0, gtCount = 0, gtBlockedUntil = 0, gtDirectFails = 0;
-async function gtGet(path, retried = false) {
+async function gtGet(path) {
   const url = GT + path;
   const c = gtCache.get(url);
   if (c && Date.now() - c.t < 120000) return c.d;
@@ -419,12 +419,7 @@ async function gtGet(path, retried = false) {
     gtCache.set(url, { t: Date.now(), d });
     return d;
   } catch (e) {
-    if (e.status === 429 && !retried) {                    // back off once, then retry
-      gtLast = Date.now() + 15000;
-      await sleep(15000);
-      try { return await gtGet(path, true); } catch (e2) { gtBlockedUntil = Date.now() + 30000; throw e2; }
-    }
-    if (e.status === 429) gtBlockedUntil = Date.now() + 30000;
+    if (e.status === 429) gtBlockedUntil = Date.now() + 45000; // live testing: waiting and retrying didn't help
     throw e;
   }
 }
@@ -442,7 +437,15 @@ async function discover(mode, progress) {
     Object.assign(s, extra);
   };
   const errors = [];
-  const plan = gtPlan(mode);
+  // GeckoTerminal allows only ~5 calls/minute per visitor in practice, so each scan takes the
+  // 3 new-pool feeds plus 2 feeds that rotate across scans. Every feed is covered over a few scans.
+  const full = gtPlan(mode);
+  const core = full.slice(0, 3), rest = full.slice(3);
+  let rot = LS.get("gtRot", {})[mode] || 0;
+  const pick = rest.length ? [0, 1].map((i) => rest[(rot + i) % rest.length]).filter((v, i, a) => a.indexOf(v) === i) : [];
+  const plan = [...core, ...pick];
+  const rots = LS.get("gtRot", {}); rots[mode] = (rot + pick.length) % Math.max(1, rest.length); LS.set("gtRot", rots);
+  S.gtNote = `GeckoTerminal: ${plan.length} of ${full.length} feeds this scan (${pick.map((p) => p.split("?")[0].replace("/networks/", "").replace("/pools", "")).join(", ") || "new pools"} rotating in)`;
   const total = 3 + plan.length; let done = 0;
   const tick = () => progress(++done / total, `Discovering… ${done}/${total} feeds`);
 
@@ -1323,7 +1326,7 @@ async function scan() {
     await processCoins((f, m) => progress(0.5 + f * 0.5, m));
     S.scannedAt = Date.now();
     const secs = ((Date.now() - t0) / 1000).toFixed(0);
-    setStatus(`Scanned ${new Date().toLocaleTimeString()} in ${secs}s · ${jevLine()}`, S.errors);
+    setStatus(`Scanned ${new Date().toLocaleTimeString()} in ${secs}s · ${jevLine()} · ${S.gtNote}`, S.errors);
   } catch (e) {
     console.error(e); setStatus("Scan failed: " + e.message, S.errors);
   } finally { S.busy = false; $("#scanBtn").disabled = false; doneProgress(); }
