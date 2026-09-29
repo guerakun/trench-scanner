@@ -22,11 +22,12 @@ const names = ["Grumpy Cat", "Moon Frog", "猫猫币", "Based Otter", "Lil Pepe"
 for (let i = 0; i < 36; i++) {
   const chain = i < 18 ? "solana" : i < 26 ? "bsc" : i < 31 ? "robinhood" : i < 34 ? "base" : "sui";
   const pump = chain === "solana" && i % 3 === 0;
+  const forcedAge = i === 1 || i === 7 ? 0.6 : i === 5 ? 3 : null;
   const addr = chain === "solana" ? solAddr(i, pump ? "pump" : "") : chain === "sui" ? "0x" + "ab".repeat(32) + "::coin::C" + i : evmAddr(i);
   const nm = names[i % names.length];
   tokens.push({
     i, chain, addr, pump, name: nm, symbol: nm.replace(/\s+/g, "").slice(0, 6).toUpperCase(),
-    mcap: Math.round(20000 + rnd() * 900000), liqRatio: 0.03 + rnd() * 0.2, ageH: 0.5 + rnd() * 80,
+    mcap: Math.round(20000 + rnd() * 900000), liqRatio: 0.03 + rnd() * 0.2, ageH: forcedAge ?? (0.5 + rnd() * 80),
     tx1: Math.round(20 + rnd() * 900), chg: [rnd() * 20 - 5, rnd() * 60 - 15, rnd() * 150 - 30, rnd() * 400 - 50],
   });
 }
@@ -242,6 +243,16 @@ try {
   ok("CA check auto-detects chain", checkedTxt.includes("HOOD"), checkedTxt.slice(0, 80));
   await page.click("#checked [data-act=recheck]"); await page.waitForTimeout(800);
   ok("recheck keeps card", (await page.$$("#checked .card")).length === 1);
+
+  // Young-coin windows and copy button
+  const young = await page.evaluate(() => S.met.filter((c) => c.ageH < 1).map((c) => [c.market.chg.h6, c.market.chg.h24]));
+  ok("coins under 1h have blank h6/h24", young.length > 0 && young.every(([a, b]) => a === null && b === null), JSON.stringify(young.slice(0, 3)));
+  const mid = await page.evaluate(() => S.met.filter((c) => c.ageH > 1.2 && c.ageH < 5.5).map((c) => [c.market.chg.h6 !== null, c.market.chg.h24]));
+  ok("coins 1–6h keep h6, blank h24", mid.every(([a, b]) => a && b === null), JSON.stringify(mid.slice(0, 3)));
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  const firstCa = await page.$eval("#list .card .copybtn", (b) => b.dataset.ca);
+  await page.click("#list .card .copybtn");
+  ok("copy button copies CA in one click", (await page.evaluate(() => navigator.clipboard.readText())) === firstCa);
 
   // Star + mute
   const firstKey = await page.$eval("#list .card", (e) => e.dataset.key);

@@ -79,7 +79,7 @@ header.top{padding:18px 0 10px;display:flex;gap:12px;align-items:center;flex-wra
 .chead{display:flex;gap:10px;align-items:flex-start}
 .icon{width:40px;height:40px;border-radius:10px;background:var(--card2);flex:none;object-fit:cover}
 .ctitle{flex:1;min-width:0}
-.ctitle .sym{font-weight:700;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ctitle .sym{font-weight:700;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center}
 .ctitle .nm{color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pills{display:flex;gap:5px;align-items:center;flex:none}
 .grade{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;font-weight:800;font-size:18px;color:#0b0e14}
@@ -118,6 +118,9 @@ details .kv{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin:6px 
 details .kv span:nth-child(odd){color:var(--dim)}
 .links{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;align-items:center}
 .actions{display:flex;gap:4px;margin-left:auto}
+.copybtn{margin-left:6px;font:600 11px system-ui,sans-serif;padding:2px 8px;border-radius:6px;border:1px solid var(--line2);background:var(--card2);color:var(--blue);vertical-align:middle;cursor:pointer}
+.copybtn:hover{border-color:var(--blue)}
+.copybtn:active{transform:scale(.96)}
 .ca{font-family:var(--mono);font-size:11px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
 .np{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.4px}
 .empty{background:var(--card);border:1px dashed var(--line2);border-radius:var(--r);padding:28px;text-align:center;color:var(--muted)}
@@ -349,6 +352,19 @@ async function pool(items, n, fn) {
   }));
 }
 function chunk(arr, n) { const out = []; for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n)); return out; }
+// Clipboard API first; falls back to a hidden textarea for browsers/panes that block it.
+async function copyText(text) {
+  let ok = false;
+  try { await navigator.clipboard.writeText(text); ok = true; } catch { /* fall through */ }
+  if (!ok) {
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, text.length);
+    try { ok = document.execCommand("copy"); } catch { ok = false; }
+    ta.remove();
+  }
+  toast(ok ? `Copied ${short(text)}` : "Copy was blocked by the browser. Long-press the address instead.");
+}
 function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("on"); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("on"), 1800); }
 
 // ------------------------------------------------------------ storage (always guarded)
@@ -522,7 +538,16 @@ function bestPair(pairs) {
 }
 
 const W = ["m5", "h1", "h6", "h24"];
-function coinFromPair(seed, p, pairCount) {
+// A price-change window only means something if the coin is older than the window before it.
+// A 40-minute coin shows m5 and h1 (its whole life); h6 and h24 would just repeat h1, so they're blanked.
+const WINDOW_NEEDS_AGE_H = { m5: 0, h1: 5 / 60, h6: 1, h24: 6 };
+function blankYoungWindows(coin) {
+  if (coin.ageH === null || !Number.isFinite(coin.ageH)) return coin;
+  for (const w of W) if (coin.ageH <= WINDOW_NEEDS_AGE_H[w]) coin.market.chg[w] = null;
+  return coin;
+}
+function coinFromPair(seed, p, pairCount) { return blankYoungWindows(coinFromPairRaw(seed, p, pairCount)); }
+function coinFromPairRaw(seed, p, pairCount) {
   const tx = {}, vol = {}, chg = {};
   for (const w of W) {
     tx[w] = { buys: num(p.txns?.[w]?.buys) || 0, sells: num(p.txns?.[w]?.sells) || 0 };
@@ -558,7 +583,8 @@ function coinFromPair(seed, p, pairCount) {
   };
 }
 
-function coinFromGT(seed) {
+function coinFromGT(seed) { return blankYoungWindows(coinFromGTRaw(seed)); }
+function coinFromGTRaw(seed) {
   const a = seed.gt.pool, t = seed.gt.token || {};
   const tx = {}, vol = {}, chg = {}, buyers = {};
   for (const w of W) {
@@ -812,10 +838,11 @@ async function bubblemapsAvailable(c) {
 function crowdOf(c) {
   const t = c.market.tx;
   const tx1 = t.h1.buys + t.h1.sells, tx6 = t.h6.buys + t.h6.sells, tx5m = t.m5.buys + t.m5.sells;
-  const prior = Math.max(0, tx6 - tx1) / 5;
+  const priorHours = c.ageH === null ? 5 : Math.min(5, Math.max(0, c.ageH - 1)); // young coins have less history
+  const prior = priorHours >= 0.25 ? Math.max(0, tx6 - tx1) / priorHours : null;
   return {
-    trades1h: tx1, trades5m: tx5m, tradesPerHourPrior5h: Math.round(prior * 10) / 10,
-    acceleration: prior > 0 ? Math.round((tx1 / prior) * 100) / 100 : (tx1 > 0 ? null : 0),
+    trades1h: tx1, trades5m: tx5m, tradesPerHourPrior5h: prior === null ? null : Math.round(prior * 10) / 10,
+    acceleration: prior ? Math.round((tx1 / prior) * 100) / 100 : null,
     avgTradeUsd1h: tx1 ? Math.round((c.market.vol.h1 || 0) / tx1) : null,
     buyShare1h: tx1 ? Math.round((t.h1.buys / tx1) * 100) / 100 : null,
     uniqueBuyers1h: c.market.buyers?.h1 ?? null,
@@ -1016,7 +1043,7 @@ function jevState(c) {
       source: onCurve(c) ? "bonding curve" : "pool", pairsFound: c.pairCount,
     },
     curve: c.curve ? { validated: c.curve.validated, pctSold: r2(c.curve.pctSold), solRaised: r2(c.curve.solRaised), graduated: c.curve.graduated ?? null, reason: c.curve.reason || null } : null,
-    market: { priceUsd: c.market.price, marketCap: r2(c.market.mcap), fdv: r2(c.market.fdv), volume: c.market.vol, txns: c.market.tx, priceChange: c.market.chg },
+    market: { priceUsd: c.market.price, marketCap: r2(c.market.mcap), fdv: r2(c.market.fdv), volume: c.market.vol, txns: c.market.tx, priceChange: c.market.chg, note: "priceChange windows longer than the coin's life are null; volume and txns in those windows equal its lifetime totals" },
     crowd: c.crowd,
     story: {
       description: (c.story.description || "").slice(0, 500), linkTypes: types, hasImage: Boolean(c.story.image),
@@ -1671,7 +1698,7 @@ function card(c, opt = {}) {
   return `<article class="card ${opt.checked ? "checked" : ""} ${c.gone ? "gone" : ""}" data-key="${esc(c.key)}">
     <div class="chead">
       ${img ? `<img class="icon" src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.visibility='hidden'">` : `<div class="icon"></div>`}
-      <div class="ctitle"><div class="sym">$${esc(c.symbol)}</div><div class="nm">${esc(c.name)} · ${esc(chainL)} · ${age(c.ageH)} · ${esc(LAUNCHPAD_NAME[c.dexId] || c.dexId || "")}</div></div>
+      <div class="ctitle"><div class="sym">$${esc(c.symbol)} <button class="copybtn" data-act="copy" data-ca="${esc(c.address)}" title="Copy contract address">⧉ Copy CA</button></div><div class="nm">${esc(c.name)} · ${esc(chainL)} · ${age(c.ageH)} · ${esc(LAUNCHPAD_NAME[c.dexId] || c.dexId || "")}</div></div>
       <div class="pills"><span class="verdict v-${esc(d.verdict)}">${esc(d.verdict)}</span><span class="grade g${esc(d.grade)}" title="Evidence grade. Not a prediction.">${esc(d.grade)}</span></div>
     </div>
     ${decide}
@@ -1697,7 +1724,7 @@ function card(c, opt = {}) {
         <button class="iconbtn" data-act="mute" data-key="${esc(c.key)}" title="Mute: never show again">⊘</button>
       </div>
     </div>
-    <div class="ca" data-act="copy" data-ca="${esc(c.address)}" title="Copy address">${esc(c.address)}</div>
+    <div class="ca" data-act="copy" data-ca="${esc(c.address)}" title="Click to copy">${esc(c.address)} ⧉</div>
     <div class="np">Evidence ranking · not a prediction · not a buy rating</div>
   </article>`;
 }
@@ -1741,7 +1768,7 @@ function bind() {
   document.body.addEventListener("click", (e) => {
     const b = e.target.closest("[data-act]"); if (!b) return;
     const act = b.dataset.act;
-    if (act === "copy") { navigator.clipboard?.writeText(b.dataset.ca).then(() => toast("Address copied"), () => toast("Copy blocked")); }
+    if (act === "copy") copyText(b.dataset.ca);
     else if (act === "star") {
       const k = b.dataset.key;
       if (mem.stars[k]) delete mem.stars[k];
