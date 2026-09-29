@@ -305,7 +305,7 @@ function gtPlan(mode) {
   if (mode === "fresh") return [newP("solana"), newP("bsc"), newP("robinhood"), ...pads];
   if (mode === "early") return [newP("solana"), ...pads, trend("solana", "5m"), newP("bsc"), newP("robinhood"), trend("bsc", "5m"), trend("robinhood", "5m"), sort("solana", "h24_tx_count_desc")];
   if (mode === "recovery") return [trend("solana", "24h"), sort("solana", "h24_volume_usd_desc"), trend("bsc", "24h"), sort("bsc", "h24_volume_usd_desc"), trend("robinhood", "24h"), sort("robinhood", "h24_volume_usd_desc"), sort("solana", "h24_volume_usd_desc", 2), trend("solana", "6h"), sort("solana", "h24_tx_count_desc"), sort("bsc", "h24_tx_count_desc")];
-  return [newP("solana"), trend("solana"), sort("solana", "h24_volume_usd_desc"), sort("solana", "h24_tx_count_desc"), ...pads, newP("bsc"), trend("bsc"), sort("bsc", "h24_tx_count_desc"), newP("robinhood"), trend("robinhood"), sort("robinhood", "h24_tx_count_desc")];
+  return [newP("solana"), newP("bsc"), newP("robinhood"), pads[0], pads[1], trend("solana"), trend("bsc"), trend("robinhood"), pads[2], sort("solana", "h24_volume_usd_desc"), sort("solana", "h24_tx_count_desc"), sort("bsc", "h24_tx_count_desc"), sort("robinhood", "h24_tx_count_desc")];
 }
 
 // ------------------------------------------------------------ utils
@@ -392,13 +392,12 @@ async function getJSON(url, init = {}, timeout) {
 // GeckoTerminal: serialized with spacing, short cache, stop on repeated 429.
 const gtCache = new Map();
 let gtLast = 0, gtCount = 0, gtBlockedUntil = 0, gtDirectFails = 0;
-async function gtGet(path) {
+async function gtGet(path, retried = false) {
   const url = GT + path;
   const c = gtCache.get(url);
   if (c && Date.now() - c.t < 120000) return c.d;
-  if (Date.now() < gtBlockedUntil) throw new Error("GeckoTerminal rate limited");
-  if (Date.now() - gtLast > 60000) gtCount = 0;          // new minute window
-  const gap = gtCount < 4 ? 400 : 3000;                   // ~20/min sustained
+  if (Date.now() < gtBlockedUntil) throw new Error("GeckoTerminal rate limited, skipped");
+  const gap = 2500;                                       // steady ~24/min; live testing showed bursts get 429s fast
   const wait = gtLast + gap - Date.now();
   gtLast = Math.max(Date.now(), gtLast + gap);
   if (wait > 0) await sleep(wait);
@@ -412,7 +411,7 @@ async function gtGet(path) {
       try { d = await rawFetch(url, init); gtDirectFails = 0; }
       catch (e) {
         if (e instanceof HttpError) throw e;
-        gtDirectFails++;                                   // a 429 without CORS headers looks like this
+        gtDirectFails++;                                   // CORS or network failure
         if (!w) { gtBlockedUntil = Date.now() + 30000; throw new Error("GeckoTerminal blocked or rate limited"); }
         d = await rawFetch(`${w}/relay?u=${encodeURIComponent(url)}`, init);
       }
@@ -420,7 +419,12 @@ async function gtGet(path) {
     gtCache.set(url, { t: Date.now(), d });
     return d;
   } catch (e) {
-    if (e.status === 429) { gtBlockedUntil = Date.now() + 30000; }
+    if (e.status === 429 && !retried) {                    // back off once, then retry
+      gtLast = Date.now() + 15000;
+      await sleep(15000);
+      try { return await gtGet(path, true); } catch (e2) { gtBlockedUntil = Date.now() + 30000; throw e2; }
+    }
+    if (e.status === 429) gtBlockedUntil = Date.now() + 30000;
     throw e;
   }
 }
@@ -1117,7 +1121,10 @@ function decide(c) {
       d.gradeProbs = s;
       const top = s[0];
       const ties = s.filter((x) => pts(top.p) - pts(x.p) < pts(TIE_MARGIN));
-      if (ties.length > 1) {
+      if (ties.length > 2 || (ties.length > 1 && top.p < UNSURE_BELOW)) {
+        g = worse(top.k, rg);
+        d.notes.push(`Jev unsure (split ${ties.map((t) => `${t.k} ${pts(t.p)}%`).join(" / ")}): took the more cautious of Jev's top pick and rules (${rg}) → ${g}`);
+      } else if (ties.length > 1) {
         const dist = (x) => Math.abs(gi(x.k) - gi(rg));
         const best = Math.min(...ties.map(dist));
         const near = ties.filter((x) => dist(x) === best);

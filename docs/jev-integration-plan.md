@@ -17,8 +17,8 @@ Roles, as Faisal set them:
 
 ### Grade
 - Jev's top grade wins when it leads by at least **10 points** and is at least **30%** likely.
-- **Tie** (top two within 10 points, e.g. A 35% / B 35%): pick the tied grade closest to the rules-evidence grade. If still even, take the **lower** grade.
-- **Jev unsure** (top grade under 30%): take the more cautious of Jev's pick and the rules grade.
+- **Tie** (exactly two grades within 10 points, e.g. A 35% / B 35%): pick the tied grade closest to the rules-evidence grade. If still even, take the **lower** grade.
+- **Jev unsure**: top grade under 30%, or a three-way split within 10 points (e.g. B 30% / C 26% / A 23%). Take the more cautious of Jev's top pick and the rules grade.
 - Jev chose a grade but sent no probabilities → the more cautious of Jev's pick and the rules grade.
 - Jev's grade unreadable → rules-only, and the card says so.
 - Probabilities are compared as whole percentage points, so "within 10 points" means a gap of 9 or less.
