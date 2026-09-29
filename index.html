@@ -791,7 +791,9 @@ async function readCurves(coins) {
   const targets = coins.filter((c) => c.chain === "solana" && (c.dexId === "pumpfun" || c.dexId === "pump-fun") && c.pairAddress);
   if (!targets.length) return;
   const disc = await curveDiscriminator();
-  for (const group of chunk(targets, 100)) {
+  // PublicNode rejects getMultipleAccounts with more than 10 keys ("Request blocked", found in live testing).
+  for (const group of chunk(targets, 10)) {
+    await sleep(120);
     let res;
     try { res = await rpc("getMultipleAccounts", [group.map((c) => c.pairAddress), { encoding: "base64", commitment: "confirmed" }]); }
     catch (e) { for (const c of group) c.curve = { validated: false, reason: "RPC unavailable: " + e.message }; continue; }
