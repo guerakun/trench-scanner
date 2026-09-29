@@ -31,7 +31,7 @@ const RELAY_GET_HOSTS = new Set([
   "api.gopluslabs.io",
   "api-legacy.bubblemaps.io",
 ]);
-const RELAY_POST_HOSTS = new Set(["api.mainnet-beta.solana.com"]);
+const RELAY_POST_HOSTS = new Set(["api.mainnet-beta.solana.com", "solana-rpc.publicnode.com"]);
 const RPC_METHODS = new Set(["getMultipleAccounts", "getAccountInfo"]);
 
 export default {

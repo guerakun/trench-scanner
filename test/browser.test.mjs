@@ -141,7 +141,7 @@ async function route(r) {
   if (u.host === "api.rugcheck.xyz") { const mint = u.pathname.split("/")[3]; return J(rugReport(mint)); }
   if (u.host === "api.gopluslabs.io") return J(goplus(u.searchParams.get("contract_addresses")));
   if (u.host === "api-legacy.bubblemaps.io") return J({ availability: true, status: "OK" });
-  if (u.host === "api.mainnet-beta.solana.com") {
+  if (u.host === "solana-rpc.publicnode.com" || u.host === "api.mainnet-beta.solana.com") {
     const body = JSON.parse(req.postData()); return J({ jsonrpc: "2.0", id: 1, result: { value: body.params[0].map(curveAccount) } });
   }
   if (u.origin === WORKER) {

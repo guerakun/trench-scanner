@@ -210,7 +210,7 @@ footer p{margin:4px 0}
   <footer>
     <p><b>Grades rank evidence, not outcomes.</b> An A-grade memecoin is still a lottery ticket. Nothing here is a buy rating, a price prediction, or financial advice.</p>
     <p>Verdict, grade and category calls come from Jev (TypeSafe) with its probabilities shown on each card. When Jev's top choices are close, the page breaks the tie with the rules-based evidence and, if that's still unclear, takes the more cautious answer. Hard caps and hard security failures are always applied by code. Every read (heat, trend, lore, gap, phase, rebound, setup) is a heuristic or a model judgment, labeled "not a prediction".</p>
-    <p>Data: DexScreener, GeckoTerminal, RugCheck, GoPlus, Solana RPC, Bubblemaps; optional X data via your own Worker. Chains without a security checker show UNKNOWN, never a pass. Scan memory lives only in this browser.</p>
+    <p>Data: DexScreener, GeckoTerminal, RugCheck, GoPlus, Solana RPC (PublicNode by default), Bubblemaps; optional X data via your own Worker. Chains without a security checker show UNKNOWN, never a pass. Scan memory lives only in this browser.</p>
   </footer>
 </main>
 
@@ -251,7 +251,10 @@ const GT = "https://api.geckoterminal.com/api/v2";
 const RUG = "https://api.rugcheck.xyz/v1";
 const GP = "https://api.gopluslabs.io/api/v1";
 const BM_AVAIL = "https://api-legacy.bubblemaps.io/map-availability";
-const DEFAULT_RPC = "https://api.mainnet-beta.solana.com";
+// api.mainnet-beta.solana.com answers 403 to browser pages (seen in live testing), so the
+// default is PublicNode's free RPC, which allows browser calls. Custom RPC in Settings.
+const DEFAULT_RPC = "https://solana-rpc.publicnode.com";
+const FALLBACK_RPC = "https://api.mainnet-beta.solana.com";
 const PUMP_PROGRAM = "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P";
 const PUMP_INITIAL_REAL_TOKENS = 793100000000000n; // 793.1M tokens, 6 decimals
 const TIE_MARGIN = 0.10;     // top-two probabilities closer than this = tie
@@ -357,6 +360,7 @@ const settings = Object.assign({
   workerUrl: "", useJev: true, useX: false, jevMax: 40, xMax: 12, rpc: DEFAULT_RPC,
   mode: "default", strict: true, chain: "all",
 }, LS.get("settings", {}));
+if (settings.rpc === FALLBACK_RPC) settings.rpc = DEFAULT_RPC; // migrate the old default
 function saveSettings() { LS.set("settings", settings); }
 const workerBase = () => (settings.workerUrl || "").trim().replace(/\/+$/, "");
 
@@ -752,9 +756,8 @@ async function rpc(method, params) {
   const init = { method: "POST", headers: { "Content-Type": "application/json" }, body };
   try { return await rawFetch(url, init, 15000); }
   catch (e) {
-    const w = workerBase();
-    if (!w || url !== DEFAULT_RPC) throw e;
-    return rawFetch(`${w}/relay?u=${encodeURIComponent(url)}`, init, 15000);
+    if (url === FALLBACK_RPC) throw e;
+    try { return await rawFetch(FALLBACK_RPC, init, 15000); } catch { throw e; }
   }
 }
 
