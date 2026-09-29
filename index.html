@@ -1371,7 +1371,7 @@ function jevLine() {
 
 async function processCoins(prog = () => {}) {
   const f = currentFilters();
-  const met = S.live.filter((c) => meetsFilters(c, f));
+  let met = S.live.filter((c) => meetsFilters(c, f));
   const dupes = duplicateLosers(S.live);
 
   // Security: rank by liquidity, check the deepest first (per-scan caps keep APIs happy).
@@ -1389,6 +1389,8 @@ async function processCoins(prog = () => {}) {
 
   prog(0.5, "Reading bonding curves…");
   await readCurves(met.filter((c) => !c.curve));
+  // Curve coins have no reported liquidity until the curve is read, so apply min liquidity again now.
+  if (f.minLiq) met = met.filter((c) => !(onCurve(c) && c.curve?.validated && (c.market.liq ?? 0) < f.minLiq));
 
   for (const c of met) { c.derived = {}; prepareEvidence(c); }
   computeGaps(met);
