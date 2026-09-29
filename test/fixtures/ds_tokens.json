@@ -1,0 +1,90 @@
+[
+  {
+    "chainId": "solana",
+    "dexId": "orca",
+    "url": "https://dexscreener.com/solana/5zpyutju9ee6jfymdgok7f6s5kczqtc9fomp3uekuya9",
+    "pairAddress": "5zpyutJu9ee6jFymDGoK7F6S5Kczqtc9FomP3ueKuyA9",
+    "labels": ["wp"],
+    "baseToken": { "address": "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263", "name": "Bonk", "symbol": "Bonk" },
+    "quoteToken": { "address": "So11111111111111111111111111111111111111112", "name": "Wrapped SOL", "symbol": "SOL" },
+    "priceNative": "0.00000003057",
+    "priceUsd": "0.000003733",
+    "txns": {
+      "m5": { "buys": 45, "sells": 144 },
+      "h1": { "buys": 204, "sells": 378 },
+      "h6": { "buys": 2510, "sells": 2899 },
+      "h24": { "buys": 10313, "sells": 11861 }
+    },
+    "volume": { "h24": 1150242.56, "h6": 281324.79, "h1": 26042.6, "m5": 7756.98 },
+    "priceChange": { "m5": 0.38, "h1": 0.81, "h6": 2.32, "h24": -1.15 },
+    "liquidity": { "usd": 425962.72, "base": 77986813595, "quote": 1104.2308 },
+    "fdv": 331749608,
+    "marketCap": 328508344,
+    "pairCreatedAt": 1671980424000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/ba03c0370670d176?width=800&height=800&quality=95&format=auto",
+      "header": "https://cdn.dexscreener.com/cms/images/e2667fc59737e727?width=1500&height=500&quality=95&format=auto",
+      "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263?timestamp=1790379000000",
+      "websites": [ { "url": "https://www.bonkcoin.com", "label": "Website" } ],
+      "socials": [
+        { "url": "https://twitter.com/bonk_inu", "type": "twitter" },
+        { "url": "https://t.me/Official_Bonk_Inu", "type": "telegram" }
+      ]
+    }
+  },
+  {
+    "chainId": "solana",
+    "dexId": "pumpfun",
+    "url": "https://dexscreener.com/solana/44zixdkvs7vvunfunmklmnafrukaod8ufklan2aunypy",
+    "pairAddress": "44ziXDKVs7VVunFUnMkLMnAFRukaod8UFkLan2aUnypY",
+    "baseToken": { "address": "Eh5rTGmL7RHtdpRXLLX6xLsHvbSL6htVCa7ifhQVV1bf", "name": "Grumpy Cat", "symbol": "GRUMPY" },
+    "quoteToken": { "address": "So11111111111111111111111111111111111111112", "name": "Wrapped SOL", "symbol": "SOL" },
+    "priceNative": "0.0000002520",
+    "priceUsd": "0.00002975",
+    "txns": {
+      "m5": { "buys": 3, "sells": 1 },
+      "h1": { "buys": 45, "sells": 35 },
+      "h6": { "buys": 183, "sells": 153 },
+      "h24": { "buys": 1123, "sells": 642 }
+    },
+    "volume": { "h24": 81658.62, "h6": 10304.05, "h1": 2571.71, "m5": 598.37 },
+    "priceChange": { "m5": 0.66, "h1": -2.85, "h6": 5.47, "h24": 726 },
+    "fdv": 29759.19,
+    "marketCap": 29759.19,
+    "pairCreatedAt": 1790547595000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/exampleGrumpy?width=800&height=800&quality=95&format=auto",
+      "websites": [],
+      "socials": [ { "url": "https://x.com/grumpycat", "type": "twitter" } ]
+    },
+    "boosts": { "active": 100 }
+  },
+  {
+    "chainId": "robinhood",
+    "dexId": "uniswap",
+    "url": "https://dexscreener.com/robinhood/0x708aef3736c15fcc1c0b3606c5b9a33fe8656784",
+    "pairAddress": "0x708aEf3736C15FCc1c0b3606C5b9a33fe8656784",
+    "labels": ["v3"],
+    "baseToken": { "address": "0xAE2Df3c1749daEE721c1BFcbbFDde5D61ae7cb99", "name": "Bitcoin Ethereum Tether", "symbol": "BTCETHUSDT" },
+    "quoteToken": { "address": "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73", "name": "WETH", "symbol": "WETH" },
+    "priceNative": "0.000000005173",
+    "priceUsd": "0.000009778",
+    "txns": {
+      "m5": { "buys": 0, "sells": 0 },
+      "h1": { "buys": 1, "sells": 0 },
+      "h6": { "buys": 1, "sells": 2 },
+      "h24": { "buys": 3, "sells": 6 }
+    },
+    "volume": { "h24": 691.34, "h6": 362, "h1": 1.9, "m5": 0 },
+    "priceChange": { "h1": 0.07, "h6": -9.85, "h24": -16.25 },
+    "liquidity": { "usd": 10691.35, "base": 728969095, "quote": 1.8852 },
+    "fdv": 9779,
+    "marketCap": 9779,
+    "pairCreatedAt": 1784427448000,
+    "info": {
+      "imageUrl": "https://cdn.dexscreener.com/cms/images/DljptsvREQekWdRm?width=800&height=800&quality=95&format=auto",
+      "websites": [ { "url": "https://verify.sourcify.dev/jobs/0f84e9ae", "label": "Docs" } ],
+      "socials": [ { "url": "https://x.com/i/communities/2015439281674940521", "type": "twitter" } ]
+    }
+  }
+]

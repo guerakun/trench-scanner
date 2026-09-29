@@ -1,0 +1,32 @@
+{
+  "status": "success",
+  "msg": "success",
+  "data": {
+    "type": "user",
+    "userName": "esotericpigeon",
+    "url": "https://x.com/esotericpigeon",
+    "id": "1452398712345678912",
+    "name": "pigeon",
+    "isBlueVerified": true,
+    "verifiedType": null,
+    "profilePicture": "https://pbs.twimg.com/profile_images/example_normal.jpg",
+    "coverPicture": "https://pbs.twimg.com/profile_banners/example",
+    "description": "painting with claudes",
+    "location": "",
+    "followers": 18342,
+    "following": 612,
+    "canDm": false,
+    "createdAt": "Thu Dec 13 08:41:26 +0000 2021",
+    "favouritesCount": 22110,
+    "hasCustomTimelines": false,
+    "isTranslator": false,
+    "mediaCount": 402,
+    "statusesCount": 9981,
+    "withheldInCountries": [],
+    "possiblySensitive": false,
+    "pinnedTweetIds": [],
+    "unavailable": false,
+    "message": "",
+    "unavailableReason": ""
+  }
+}

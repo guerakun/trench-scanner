@@ -1,0 +1,21 @@
+name = "trench-scanner-proxy"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+[vars]
+# Comma-separated list of page origins allowed to call this Worker.
+ALLOWED_ORIGINS = "https://guerakun.github.io,http://localhost:8080,http://127.0.0.1:8080"
+
+# Secrets (set with: npx wrangler secret put NAME) - never put them here:
+#   TYPESAFE_API_KEY   (required for Jev)
+#   TWITTERAPI_IO_KEY  (optional, enables the X layer)
+
+# Per-IP rate limit for /jev and /x so a stranger can't run up your API bills.
+# 30 requests per minute per IP is plenty for one person scanning.
+[[ratelimits]]
+name = "LIMITER"
+namespace_id = "7301"
+
+  [ratelimits.simple]
+  limit = 30
+  period = 60

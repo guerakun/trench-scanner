@@ -1,0 +1,41 @@
+[
+  {
+    "url": "https://dexscreener.com/solana/6nsm2hxvaetydruyjjaukwgwgi8cgjmbolee7wchekn4",
+    "chainId": "solana",
+    "tokenAddress": "6nSM2HxvaetyDrUYjjAUKwgWGi8CGjmboLee7wcHeKN4",
+    "description": "the shib stays anonymous.\n\nhold $ZSHIB receive $ZEC rewards.",
+    "icon": "YLC7th-Q1wUHtsxg",
+    "header": "https://cdn.dexscreener.com/cms/images/_MzeLRvK1v4U8FQ4?width=900&height=300&fit=crop&quality=95&format=auto",
+    "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/6nSM2HxvaetyDrUYjjAUKwgWGi8CGjmboLee7wcHeKN4?timestamp=1790594700000",
+    "links": [
+      { "url": "https://zshib.cash/" },
+      { "type": "twitter", "url": "https://x.com/zshibcash" },
+      { "type": "telegram", "url": "https://t.me/zshibcash" }
+    ],
+    "totalAmount": 30,
+    "amount": 30
+  },
+  {
+    "url": "https://dexscreener.com/ethereum/0x4e67db19044549ff420860834c91b45bad298722",
+    "chainId": "ethereum",
+    "tokenAddress": "0x4E67DB19044549fF420860834c91b45BaD298722",
+    "description": "The currency from Vitalik's Snowmoon, shipped.",
+    "icon": "JQpVXIsES4OfgEFK",
+    "openGraph": "https://cdn.dexscreener.com/token-images/og/ethereum/0x4e67db19044549ff420860834c91b45bad298722?timestamp=1790594700000",
+    "links": [
+      { "url": "https://www.zipcoin.cash/" },
+      { "type": "twitter", "url": "https://x.com/zipcoincash" }
+    ],
+    "totalAmount": 10,
+    "amount": 10
+  },
+  {
+    "url": "https://dexscreener.com/solana/ffzty32bzbpa8zrlbbiwonzw2emgv86tuxaoqhz1pump",
+    "chainId": "solana",
+    "tokenAddress": "FFzTy32bZbPA8zRLbbiWoNzW2emGv86tUxaoqhz1pump",
+    "icon": "AXwO-uwyFHRPU-aS",
+    "links": [ { "type": "twitter", "url": "https://x.com/XPadLaunch" } ],
+    "totalAmount": 500,
+    "amount": 100
+  }
+]

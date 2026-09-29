@@ -1,0 +1,23 @@
+{
+  "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+  "tokenType": "",
+  "risks": [
+    {
+      "name": "Mutable metadata",
+      "value": "",
+      "description": "Token metadata can be changed by the owner",
+      "score": 100,
+      "level": "warn"
+    },
+    {
+      "name": "Top 10 holders high ownership",
+      "value": "",
+      "description": "The top 10 users hold more than 70% token supply",
+      "score": 5000,
+      "level": "danger"
+    }
+  ],
+  "score": 5101,
+  "score_normalised": 45,
+  "lpLockedPct": 15.280471947577576
+}

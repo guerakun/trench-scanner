@@ -1,0 +1,35 @@
+[
+  {
+    "url": "https://dexscreener.com/solana/8cef2mccj1dsbm7zgb2zmrgk2jsaefcwzfvxu7xm1qwm",
+    "chainId": "solana",
+    "tokenAddress": "8CeF2mccj1DsBM7zgB2zMRGk2JsaeFCwzFVxU7xm1QWm",
+    "icon": "https://cdn.dexscreener.com/cms/images/Z3ng8Q91zTHe31xi?width=64&height=64&fit=crop&quality=95&format=auto",
+    "header": "https://cdn.dexscreener.com/cms/images/gZyIFj2EZuJnCKAK?width=600&height=200&fit=crop&quality=95&format=auto",
+    "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/8CeF2mccj1DsBM7zgB2zMRGk2JsaeFCwzFVxU7xm1QWm?timestamp=1790642700000",
+    "description": "Teaching claudes to paint",
+    "links": [
+      { "label": "Website", "url": "https://stillwet.art/" },
+      { "type": "twitter", "url": "https://x.com/esotericpigeon/status/2104732369777250354" }
+    ],
+    "cto": false
+  },
+  {
+    "url": "https://dexscreener.com/solana/2xxrontwfmrhdtdfaxhdtm8av21ovsjcgsyfg4qdpump",
+    "chainId": "solana",
+    "tokenAddress": "2xXroNTWfMrhDTdFaxhDtm8av21ovSjCgSYFg4QDpump",
+    "icon": "https://cdn.dexscreener.com/cms/images/OYa9LHbrTtdbkOCi?width=64&height=64&fit=crop&quality=95&format=auto",
+    "header": "https://cdn.dexscreener.com/cms/images/pCw6LDns5liL6imK?width=600&height=200&fit=crop&quality=95&format=auto",
+    "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/2xXroNTWfMrhDTdFaxhDtm8av21ovSjCgSYFg4QDpump?timestamp=1790642700000",
+    "links": [ { "label": "Website", "url": "https://claudepad.xyz/" } ],
+    "cto": false
+  },
+  {
+    "url": "https://dexscreener.com/bsc/0x6b4acce5878c2850b5d5acfdde009cc4c9e14444",
+    "chainId": "bsc",
+    "tokenAddress": "0x6b4ACcE5878C2850b5d5Acfdde009cC4c9E14444",
+    "icon": "https://cdn.dexscreener.com/cms/images/exampleBscIcon?width=64&height=64&fit=crop&quality=95&format=auto",
+    "description": "four.meme test token",
+    "links": [ { "type": "telegram", "url": "https://t.me/example" } ],
+    "cto": true
+  }
+]

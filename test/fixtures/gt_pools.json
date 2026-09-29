@@ -1,0 +1,102 @@
+{
+  "data": [
+    {
+      "id": "solana_44ziXDKVs7VVunFUnMkLMnAFRukaod8UFkLan2aUnypY",
+      "type": "pool",
+      "attributes": {
+        "base_token_price_usd": "0.0000297512",
+        "base_token_price_native_currency": "0.000000252",
+        "quote_token_price_usd": "118.05",
+        "quote_token_price_native_currency": "1.0",
+        "base_token_price_quote_token": "0.000000252",
+        "quote_token_price_base_token": "3968253.97",
+        "address": "44ziXDKVs7VVunFUnMkLMnAFRukaod8UFkLan2aUnypY",
+        "name": "GRUMPY / SOL",
+        "pool_created_at": "2026-09-28T20:59:55Z",
+        "fdv_usd": "29759.19",
+        "market_cap_usd": null,
+        "price_change_percentage": { "m5": "0.66", "m15": "1.2", "m30": "-0.4", "h1": "-2.85", "h6": "5.47", "h24": "726" },
+        "transactions": {
+          "m5": { "buys": 3, "sells": 1, "buyers": 3, "sellers": 1 },
+          "m15": { "buys": 9, "sells": 6, "buyers": 8, "sellers": 5 },
+          "m30": { "buys": 20, "sells": 14, "buyers": 17, "sellers": 12 },
+          "h1": { "buys": 45, "sells": 35, "buyers": 38, "sellers": 29 },
+          "h6": { "buys": 183, "sells": 153, "buyers": 140, "sellers": 110 },
+          "h24": { "buys": 1123, "sells": 642, "buyers": 701, "sellers": 455 }
+        },
+        "volume_usd": { "m5": "598.37", "m15": "1502.1", "m30": "2010.4", "h1": "2571.71", "h6": "10304.05", "h24": "81658.62" },
+        "reserve_in_usd": "8123.44",
+        "sentiment_vote_positive_percentage": 0,
+        "sentiment_vote_negative_percentage": 0,
+        "community_sus_report": 0
+      },
+      "relationships": {
+        "base_token": { "data": { "id": "solana_Eh5rTGmL7RHtdpRXLLX6xLsHvbSL6htVCa7ifhQVV1bf", "type": "token" } },
+        "quote_token": { "data": { "id": "solana_So11111111111111111111111111111111111111112", "type": "token" } },
+        "dex": { "data": { "id": "pump-fun", "type": "dex" } }
+      }
+    },
+    {
+      "id": "bsc_0x6b4acce5878c2850b5d5acfdde009cc4c9e14444",
+      "type": "pool",
+      "attributes": {
+        "base_token_price_usd": "0.00000912",
+        "base_token_price_native_currency": "0.0000000151",
+        "quote_token_price_usd": "1.0",
+        "quote_token_price_native_currency": "0.00165",
+        "base_token_price_quote_token": "0.00000912",
+        "quote_token_price_base_token": "109649.12",
+        "address": "0x6b4acce5878c2850b5d5acfdde009cc4c9e14444",
+        "name": "BSN / USDT",
+        "pool_created_at": "2026-09-29T02:14:08Z",
+        "fdv_usd": "9120.00",
+        "market_cap_usd": "9120.00",
+        "price_change_percentage": { "m5": "4.1", "m15": "8.0", "m30": "12.5", "h1": "20.3", "h6": "20.3", "h24": "20.3" },
+        "transactions": {
+          "m5": { "buys": 12, "sells": 4, "buyers": 10, "sellers": 4 },
+          "m15": { "buys": 30, "sells": 11, "buyers": 24, "sellers": 9 },
+          "m30": { "buys": 51, "sells": 20, "buyers": 40, "sellers": 16 },
+          "h1": { "buys": 77, "sells": 31, "buyers": 60, "sellers": 25 },
+          "h6": { "buys": 77, "sells": 31, "buyers": 60, "sellers": 25 },
+          "h24": { "buys": 77, "sells": 31, "buyers": 60, "sellers": 25 }
+        },
+        "volume_usd": { "m5": "310.2", "m15": "902.7", "m30": "1450.0", "h1": "2210.9", "h6": "2210.9", "h24": "2210.9" },
+        "reserve_in_usd": "4011.8",
+        "sentiment_vote_positive_percentage": 0,
+        "sentiment_vote_negative_percentage": 0,
+        "community_sus_report": 0
+      },
+      "relationships": {
+        "base_token": { "data": { "id": "bsc_0x6b4acce5878c2850b5d5acfdde009cc4c9e14444", "type": "token" } },
+        "quote_token": { "data": { "id": "bsc_0x55d398326f99059ff775485246999027b3197955", "type": "token" } },
+        "dex": { "data": { "id": "four-meme", "type": "dex" } }
+      }
+    }
+  ],
+  "included": [
+    {
+      "id": "solana_Eh5rTGmL7RHtdpRXLLX6xLsHvbSL6htVCa7ifhQVV1bf",
+      "type": "token",
+      "attributes": {
+        "address": "Eh5rTGmL7RHtdpRXLLX6xLsHvbSL6htVCa7ifhQVV1bf",
+        "name": "Grumpy Cat",
+        "symbol": "GRUMPY",
+        "decimals": 6,
+        "image_url": null,
+        "coingecko_coin_id": null
+      }
+    },
+    {
+      "id": "bsc_0x6b4acce5878c2850b5d5acfdde009cc4c9e14444",
+      "type": "token",
+      "attributes": {
+        "address": "0x6b4acce5878c2850b5d5acfdde009cc4c9e14444",
+        "name": "BSN",
+        "symbol": "BSN",
+        "decimals": 18,
+        "image_url": null,
+        "coingecko_coin_id": null
+      }
+    }
+  ]
+}

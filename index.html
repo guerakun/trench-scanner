@@ -1,0 +1,1782 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0b0e14">
+<title>Trench Scanner</title>
+<meta name="description" content="Memecoin launch screener that ranks evidence and safety. Not buy signals, not predictions.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0e14'/%3E%3Cpath d='M12 44 L26 26 L36 36 L52 16' stroke='%2359d499' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#0b0e14; --bg2:#10141c; --card:#141925; --card2:#1a2030; --line:#252c3d; --line2:#323b52;
+  --text:#e6e9f0; --muted:#8b93a7; --dim:#5d6579;
+  --green:#59d499; --green-bg:rgba(89,212,153,.12);
+  --amber:#f2b74a; --amber-bg:rgba(242,183,74,.12);
+  --red:#f06b6b; --red-bg:rgba(240,107,107,.12);
+  --blue:#6ea8fe; --blue-bg:rgba(110,168,254,.12);
+  --violet:#b294f7; --violet-bg:rgba(178,148,247,.12);
+  --gA:#59d499; --gB:#9ad86b; --gC:#f2b74a; --gD:#f08a4b; --gF:#f06b6b;
+  --r:12px; --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text)}
+body{font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans","Noto Sans CJK SC",sans-serif;-webkit-text-size-adjust:100%;padding-bottom:env(safe-area-inset-bottom)}
+a{color:var(--blue);text-decoration:none} a:hover{text-decoration:underline}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+.wrap{max-width:1100px;margin:0 auto;padding:0 16px}
+header.top{padding:18px 0 10px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.brand{display:flex;flex-direction:column;flex:1;min-width:200px}
+.brand h1{font-size:20px;margin:0;letter-spacing:.2px}
+.brand small{color:var(--muted)}
+.btn{background:var(--card2);border:1px solid var(--line2);border-radius:10px;padding:8px 14px;white-space:nowrap}
+.btn:hover{border-color:var(--dim)}
+.btn.primary{background:var(--green);color:#06120c;border-color:var(--green);font-weight:600}
+.btn.small{padding:4px 10px;font-size:12px;border-radius:8px}
+.btn:disabled{opacity:.5;cursor:default}
+.iconbtn{background:none;border:1px solid transparent;border-radius:8px;padding:4px 7px;color:var(--muted)}
+.iconbtn:hover{border-color:var(--line2);color:var(--text)}
+.iconbtn.on{color:var(--amber)}
+.modes{display:flex;gap:6px;overflow-x:auto;padding:4px 0 10px;scrollbar-width:none}
+.modes::-webkit-scrollbar{display:none}
+.chip{background:var(--bg2);border:1px solid var(--line);border-radius:999px;padding:5px 12px;white-space:nowrap;color:var(--muted);font-size:13px}
+.chip.on{background:var(--blue-bg);border-color:var(--blue);color:var(--text)}
+.chip small{color:var(--dim)}
+.filters{position:sticky;top:0;z-index:20;background:rgba(11,14,20,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 0}
+.frow{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+.f{display:flex;flex-direction:column;gap:2px;min-width:0}
+.f label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.f input,.f select{background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:6px 8px;width:110px}
+.f input.wide{width:170px}
+.toggle{display:flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:6px 10px;white-space:nowrap}
+.toggle input{accent-color:var(--green)}
+.toggle.strict.on{border-color:var(--green);background:var(--green-bg)}
+.ftoggle{display:none}
+.checkbox{margin:14px 0 6px;display:flex;gap:8px;flex-wrap:wrap}
+.checkbox input{flex:1;min-width:220px;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-family:var(--mono);font-size:13px}
+.funnel{display:flex;gap:4px;align-items:center;flex-wrap:wrap;color:var(--muted);font-size:13px;margin:10px 0 4px}
+.funnel b{color:var(--text);font-variant-numeric:tabular-nums}
+.funnel .arr{color:var(--dim)}
+.status{color:var(--muted);font-size:12px;min-height:18px;margin:2px 0 8px}
+.status .err{color:var(--amber)}
+.bar{height:3px;background:var(--line);border-radius:3px;overflow:hidden;margin-bottom:8px;visibility:hidden}
+.bar.on{visibility:visible}
+.bar i{display:block;height:100%;width:0;background:var(--green);transition:width .3s}
+.radar{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 12px;align-items:center}
+.radar .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-right:4px}
+.radar .chip{font-size:12px;padding:3px 10px}
+.radar .chip.on{background:var(--violet-bg);border-color:var(--violet)}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:8px 0 12px}
+.tab{background:none;border:none;border-bottom:2px solid transparent;padding:8px 12px;color:var(--muted)}
+.tab.on{color:var(--text);border-bottom-color:var(--green)}
+.tab .n{font-size:11px;color:var(--dim);margin-left:4px}
+.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:9px;min-width:0}
+.card.checked{border-color:var(--blue)}
+.card.gone{opacity:.7;border-style:dashed}
+.chead{display:flex;gap:10px;align-items:flex-start}
+.icon{width:40px;height:40px;border-radius:10px;background:var(--card2);flex:none;object-fit:cover}
+.ctitle{flex:1;min-width:0}
+.ctitle .sym{font-weight:700;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ctitle .nm{color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pills{display:flex;gap:5px;align-items:center;flex:none}
+.grade{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;font-weight:800;font-size:18px;color:#0b0e14}
+.gA{background:var(--gA)}.gB{background:var(--gB)}.gC{background:var(--gC)}.gD{background:var(--gD)}.gF{background:var(--gF)}
+.verdict{font-size:11px;font-weight:700;padding:3px 7px;border-radius:6px;letter-spacing:.3px}
+.v-PASS{background:var(--green-bg);color:var(--green)}
+.v-CAUTION{background:var(--amber-bg);color:var(--amber)}
+.v-FAIL{background:var(--red-bg);color:var(--red)}
+.v-UNKNOWN{background:var(--card2);color:var(--muted)}
+.tags{display:flex;gap:5px;flex-wrap:wrap}
+.tag{font-size:11px;padding:2px 7px;border-radius:6px;background:var(--card2);color:var(--muted);white-space:nowrap}
+.tag.g{background:var(--green-bg);color:var(--green)}
+.tag.a{background:var(--amber-bg);color:var(--amber)}
+.tag.r{background:var(--red-bg);color:var(--red)}
+.tag.b{background:var(--blue-bg);color:var(--blue)}
+.tag.v{background:var(--violet-bg);color:var(--violet)}
+.decide{font-size:12px;background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:7px 9px;color:var(--muted)}
+.decide b{color:var(--text)}
+.probs{display:flex;height:6px;border-radius:4px;overflow:hidden;margin:5px 0 3px;background:var(--line)}
+.probs i{display:block;height:100%}
+.caps{font-size:12px;color:var(--amber)}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.m{background:var(--bg2);border-radius:8px;padding:5px 7px;min-width:0}
+.m .k{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.3px}
+.m .val{font-variant-numeric:tabular-nums;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chg{display:flex;gap:8px;font-size:12px;font-variant-numeric:tabular-nums;color:var(--muted);flex-wrap:wrap}
+.up{color:var(--green)}.dn{color:var(--red)}
+.pillars{display:grid;grid-template-columns:auto 1fr auto;gap:3px 8px;font-size:11px;align-items:center;color:var(--muted)}
+.pbar{height:5px;background:var(--line);border-radius:3px;overflow:hidden}
+.pbar i{display:block;height:100%;background:var(--blue)}
+.pillars .pv{font-variant-numeric:tabular-nums;color:var(--text)}
+details{background:var(--bg2);border-radius:8px;padding:6px 9px;font-size:12px}
+details summary{cursor:pointer;color:var(--muted)}
+details ul{margin:6px 0;padding-left:18px}
+details .kv{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin:6px 0}
+details .kv span:nth-child(odd){color:var(--dim)}
+.links{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;align-items:center}
+.actions{display:flex;gap:4px;margin-left:auto}
+.ca{font-family:var(--mono);font-size:11px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.np{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.4px}
+.empty{background:var(--card);border:1px dashed var(--line2);border-radius:var(--r);padding:28px;text-align:center;color:var(--muted)}
+.empty h3{color:var(--text);margin:0 0 6px}
+.section-h{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:4px 0 8px}
+table.log{width:100%;border-collapse:collapse;font-size:13px}
+table.log th,table.log td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+table.log th{color:var(--muted);font-weight:500;font-size:11px;text-transform:uppercase}
+table.log td.num{text-align:right;font-variant-numeric:tabular-nums}
+.tablewrap{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:var(--r)}
+.score-sum{display:flex;gap:16px;flex-wrap:wrap;margin:0 0 10px;color:var(--muted);font-size:13px}
+.score-sum b{color:var(--text)}
+dialog{background:var(--card);color:var(--text);border:1px solid var(--line2);border-radius:14px;padding:0;width:min(560px,calc(100vw - 32px))}
+dialog::backdrop{background:rgba(0,0,0,.6)}
+.dlg{padding:18px;display:flex;flex-direction:column;gap:12px}
+.dlg h2{margin:0;font-size:17px}
+.dlg .f input,.dlg .f select{width:100%}
+.dlg p{margin:0;color:var(--muted);font-size:13px}
+.health{font-size:12px;color:var(--muted)}
+footer{margin:32px 0 24px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+footer p{margin:4px 0}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--card2);border:1px solid var(--line2);padding:8px 14px;border-radius:10px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:50}
+.toast.on{opacity:1}
+@media (max-width:720px){
+  .list{grid-template-columns:1fr}
+  .ftoggle{display:inline-block}
+  .filters .frow.collapsible{display:none}
+  .filters.open .frow.collapsible{display:flex}
+  .f input{width:calc(50vw - 30px)}
+  .f input.wide{width:calc(100vw - 32px)}
+  .metrics{grid-template-columns:repeat(2,1fr)}
+  header.top .btn{padding:7px 11px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Trench Scanner</h1>
+      <small>Screens memecoin launches for evidence and safety. Not buy signals. Not predictions.</small>
+    </div>
+    <button class="btn primary" id="scanBtn">Scan</button>
+    <button class="btn" id="refreshBtn" title="Re-pull market data for every coin on screen">Refresh</button>
+    <button class="btn" id="settingsBtn" title="Worker, Jev, X layer, RPC">Settings</button>
+  </header>
+  <nav class="modes" id="modes"></nav>
+</div>
+
+<div class="filters" id="filters">
+  <div class="wrap">
+    <div class="frow">
+      <label class="toggle strict" id="strictWrap" title="Only A and B grades are shown"><input type="checkbox" id="strict"> Strict (A/B only)</label>
+      <div class="f"><select id="fChain" aria-label="Chain">
+        <option value="all">All chains</option><option value="solana">Solana</option><option value="bsc">BSC</option><option value="robinhood">Robinhood</option><option value="evm">Other EVM</option>
+      </select></div>
+      <div class="f"><input id="fSearch" class="wide" placeholder="Search name / ticker / CA" aria-label="Search"></div>
+      <button class="btn small ftoggle" id="fToggle">Filters</button>
+    </div>
+    <div class="frow collapsible" style="margin-top:8px">
+      <div class="f"><label for="fMinMcap">Min mcap $</label><input id="fMinMcap" type="number" inputmode="numeric" min="0"></div>
+      <div class="f"><label for="fMaxMcap">Max mcap $</label><input id="fMaxMcap" type="number" inputmode="numeric" min="0"></div>
+      <div class="f"><label for="fMinLiq">Min liquidity $</label><input id="fMinLiq" type="number" inputmode="numeric" min="0"></div>
+      <div class="f"><label for="fMaxAge">Max age (hours)</label><input id="fMaxAge" type="number" inputmode="decimal" min="0" step="0.25"></div>
+      <div class="f"><label for="fMinTx">Min trades 1h</label><input id="fMinTx" type="number" inputmode="numeric" min="0"></div>
+      <button class="btn small" id="fReset" title="Restore this mode's defaults">Reset mode</button>
+    </div>
+  </div>
+</div>
+
+<main class="wrap">
+  <div class="checkbox">
+    <input id="caInput" placeholder="Paste a contract address (any chain) to check it" autocomplete="off" spellcheck="false" aria-label="Contract address">
+    <button class="btn" id="caBtn">Check</button>
+  </div>
+  <div class="funnel" id="funnel"></div>
+  <div class="bar" id="bar"><i></i></div>
+  <div class="status" id="status">Press Scan to start.</div>
+  <div class="radar" id="radar"></div>
+  <div id="checked"></div>
+  <div class="tabs" role="tablist">
+    <button class="tab on" data-tab="results">Results<span class="n" id="nResults"></span></button>
+    <button class="tab" data-tab="watch">Watchlist<span class="n" id="nWatch"></span></button>
+    <button class="tab" data-tab="log">Outcome log<span class="n" id="nLog"></span></button>
+  </div>
+  <section id="tab-results"><div class="list" id="list"></div></section>
+  <section id="tab-watch" hidden><div class="list" id="watchList"></div></section>
+  <section id="tab-log" hidden></section>
+
+  <footer>
+    <p><b>Grades rank evidence, not outcomes.</b> An A-grade memecoin is still a lottery ticket. Nothing here is a buy rating, a price prediction, or financial advice.</p>
+    <p>Verdict, grade and category calls come from Jev (TypeSafe) with its probabilities shown on each card. When Jev's top choices are close, the page breaks the tie with the rules-based evidence and, if that's still unclear, takes the more cautious answer. Hard caps and hard security failures are always applied by code. Every read (heat, trend, lore, gap, phase, rebound, setup) is a heuristic or a model judgment, labeled "not a prediction".</p>
+    <p>Data: DexScreener, GeckoTerminal, RugCheck, GoPlus, Solana RPC, Bubblemaps; optional X data via your own Worker. Chains without a security checker show UNKNOWN, never a pass. Scan memory lives only in this browser.</p>
+  </footer>
+</main>
+
+<dialog id="settings">
+  <form method="dialog" class="dlg">
+    <h2>Settings</h2>
+    <p>Keys never live in this page. Jev and the X layer run through your own Cloudflare Worker, which holds the keys as secrets.</p>
+    <div class="f"><label for="sWorker">Worker URL</label><input id="sWorker" placeholder="https://trench-scanner-proxy.you.workers.dev" autocomplete="off" spellcheck="false"></div>
+    <div class="frow"><button type="button" class="btn small" id="sTest">Test Worker</button><span class="health" id="sHealth"></span></div>
+    <label class="toggle"><input type="checkbox" id="sJev"> Use Jev as the decision engine</label>
+    <label class="toggle"><input type="checkbox" id="sX"> X/Twitter layer (needs TWITTERAPI_IO_KEY on the Worker)</label>
+    <div class="frow">
+      <div class="f"><label for="sJevMax">Jev coins per scan</label><input id="sJevMax" type="number" min="1" max="120"></div>
+      <div class="f"><label for="sXMax">X lookups per scan</label><input id="sXMax" type="number" min="0" max="40"></div>
+    </div>
+    <div class="f"><label for="sRpc">Solana RPC URL</label><input id="sRpc" autocomplete="off" spellcheck="false"></div>
+    <div class="frow">
+      <button type="button" class="btn small" id="sClearSeen">Clear scan memory</button>
+      <button type="button" class="btn small" id="sClearMute">Unmute all</button>
+      <button type="button" class="btn small" id="sClearLog">Clear outcome log</button>
+    </div>
+    <div class="frow" style="justify-content:flex-end"><button class="btn primary" value="save" id="sSave">Save</button></div>
+  </form>
+</dialog>
+<div class="toast" id="toast"></div>
+<script>
+"use strict";
+/* =====================================================================
+   Trench Scanner. One file, no build step, no keys.
+   Roles: this page gathers and prepares evidence; Jev (via the user's
+   Worker) makes the verdict / grade / category calls with probabilities;
+   explicit code rules break close ties and apply hard caps.
+   ===================================================================== */
+
+// ------------------------------------------------------------ config
+const DS = "https://api.dexscreener.com";
+const GT = "https://api.geckoterminal.com/api/v2";
+const RUG = "https://api.rugcheck.xyz/v1";
+const GP = "https://api.gopluslabs.io/api/v1";
+const BM_AVAIL = "https://api-legacy.bubblemaps.io/map-availability";
+const DEFAULT_RPC = "https://api.mainnet-beta.solana.com";
+const PUMP_PROGRAM = "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P";
+const PUMP_INITIAL_REAL_TOKENS = 793100000000000n; // 793.1M tokens, 6 decimals
+const TIE_MARGIN = 0.10;     // top-two probabilities closer than this = tie
+const UNSURE_BELOW = 0.30;   // top grade probability below this = Jev unsure
+const GRADES = ["A", "B", "C", "D", "F"];
+const VERDICT_SEVERITY = { PASS: 0, CAUTION: 1, FAIL: 2 };
+
+// DexScreener chainId -> checker ids and link slugs
+const CHAINS = {
+  solana:    { label: "SOL",  checker: "rugcheck", bm: "sol",  gt: "solana" },
+  bsc:       { label: "BSC",  checker: "goplus", gp: "56",    bm: "bsc",  gt: "bsc" },
+  robinhood: { label: "HOOD", checker: "goplus", gp: "4663",  bm: "robinhood", bmNoAvail: true, gt: "robinhood" },
+  ethereum:  { label: "ETH",  checker: "goplus", gp: "1",     bm: "eth" },
+  base:      { label: "BASE", checker: "goplus", gp: "8453",  bm: "base" },
+  arbitrum:  { label: "ARB",  checker: "goplus", gp: "42161", bm: "arbi" },
+  polygon:   { label: "POL",  checker: "goplus", gp: "137",   bm: "poly" },
+  avalanche: { label: "AVAX", checker: "goplus", gp: "43114", bm: "avax" },
+  optimism:  { label: "OP",   checker: "goplus", gp: "10" },
+  sonic:     { label: "S",    checker: "goplus", gp: "146",   bm: "sonic" },
+  fantom:    { label: "FTM",  checker: "goplus", gp: "250",   bm: "ftm" },
+  cronos:    { label: "CRO",  checker: "goplus", gp: "25",    bm: "cro" },
+  linea:     { label: "LINEA",checker: "goplus", gp: "59144" },
+  blast:     { label: "BLAST",checker: "goplus", gp: "81457" },
+  mantle:    { label: "MNT",  checker: "goplus", gp: "5000" },
+  zksync:    { label: "ZK",   checker: "goplus", gp: "324" },
+  scroll:    { label: "SCR",  checker: "goplus", gp: "534352" },
+  abstract:  { label: "ABS",  checker: "goplus", gp: "2741" },
+  unichain:  { label: "UNI",  checker: "goplus", gp: "130" },
+  tron:      { label: "TRX",  checker: "goplus", gp: "tron" },
+};
+const GT_TO_DS = { solana: "solana", bsc: "bsc", robinhood: "robinhood" };
+const CURVE_DEX = new Set(["pumpfun", "pump-fun", "fourmeme", "four-meme"]);
+const LAUNCHPAD_NAME = { pumpfun: "pump.fun", "pump-fun": "pump.fun", pumpswap: "pump.fun (graduated)", fourmeme: "four.meme", "four-meme": "four.meme", stonkfun: "stonkfun" };
+
+// Preset modes. Filters are remembered per mode.
+const MODES = {
+  default:  { label: "Default scan", filters: { minMcap: 10000, maxMcap: 5000000, minLiq: 5000, maxAge: 168, minTx: 10 } },
+  early:    { label: "Early hunt", hint: "<24h micro", filters: { minMcap: 0, maxMcap: 100000, minLiq: 2000, maxAge: 24, minTx: 20 } },
+  lowcap:   { label: "Low cap", hint: "$5K–150K", filters: { minMcap: 5000, maxMcap: 150000, minLiq: 3000, maxAge: 168, minTx: 10 } },
+  fresh:    { label: "Fresh", hint: "minutes old", filters: { minMcap: 0, maxMcap: 500000, minLiq: 0, maxAge: 1, minTx: 5 } },
+  recovery: { label: "Recovery", hint: "$300K–1M, ≤7d", filters: { minMcap: 300000, maxMcap: 1000000, minLiq: 25000, maxAge: 168, minTx: 20 } },
+};
+
+// GeckoTerminal calls per mode, in priority order (GT allows roughly 10–30/min).
+function gtPlan(mode) {
+  const newP = (n) => `/networks/${n}/new_pools?include=base_token&page=1`;
+  const trend = (n, d = "1h") => `/networks/${n}/trending_pools?include=base_token&duration=${d}&page=1`;
+  const sort = (n, s, p = 1) => `/networks/${n}/pools?include=base_token&sort=${s}&page=${p}`;
+  const dex = (n, d) => `/networks/${n}/dexes/${d}/pools?include=base_token&sort=h24_tx_count_desc&page=1`;
+  const pads = [dex("solana", "pump-fun"), dex("bsc", "four-meme"), dex("solana", "stonkfun")];
+  if (mode === "fresh") return [newP("solana"), newP("bsc"), newP("robinhood"), ...pads];
+  if (mode === "early") return [newP("solana"), ...pads, trend("solana", "5m"), newP("bsc"), newP("robinhood"), trend("bsc", "5m"), trend("robinhood", "5m"), sort("solana", "h24_tx_count_desc")];
+  if (mode === "recovery") return [trend("solana", "24h"), sort("solana", "h24_volume_usd_desc"), trend("bsc", "24h"), sort("bsc", "h24_volume_usd_desc"), trend("robinhood", "24h"), sort("robinhood", "h24_volume_usd_desc"), sort("solana", "h24_volume_usd_desc", 2), trend("solana", "6h"), sort("solana", "h24_tx_count_desc"), sort("bsc", "h24_tx_count_desc")];
+  return [newP("solana"), trend("solana"), sort("solana", "h24_volume_usd_desc"), sort("solana", "h24_tx_count_desc"), ...pads, newP("bsc"), trend("bsc"), sort("bsc", "h24_tx_count_desc"), newP("robinhood"), trend("robinhood"), sort("robinhood", "h24_tx_count_desc")];
+}
+
+// ------------------------------------------------------------ utils
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const num = (x) => { const n = typeof x === "string" ? parseFloat(x) : x; return Number.isFinite(n) ? n : null; };
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const safeUrl = (u) => { try { const x = new URL(u); return /^https?:$/.test(x.protocol) ? x.href : ""; } catch { return ""; } };
+function money(n) {
+  if (n === null || n === undefined || !Number.isFinite(n)) return "–";
+  const a = Math.abs(n);
+  if (a >= 1e9) return "$" + (n / 1e9).toFixed(2) + "B";
+  if (a >= 1e6) return "$" + (n / 1e6).toFixed(2) + "M";
+  if (a >= 1e3) return "$" + (n / 1e3).toFixed(1) + "K";
+  if (a >= 1) return "$" + n.toFixed(0);
+  return "$" + n.toPrecision(2);
+}
+function price(n) {
+  if (!Number.isFinite(n)) return "–";
+  if (n >= 1) return "$" + n.toFixed(4);
+  const s = n.toExponential(3); const [m, e] = s.split("e");
+  return +e < -5 ? `$${m}e${e}` : "$" + n.toPrecision(4);
+}
+const pct = (n, d = 0) => (n === null || !Number.isFinite(n)) ? "–" : (n > 0 ? "+" : "") + n.toFixed(d) + "%";
+function age(h) {
+  if (h === null || !Number.isFinite(h)) return "?";
+  if (h < 1) return Math.max(1, Math.round(h * 60)) + "m";
+  if (h < 48) return h.toFixed(h < 10 ? 1 : 0) + "h";
+  return Math.round(h / 24) + "d";
+}
+function short(a) { return a && a.length > 12 ? a.slice(0, 4) + "…" + a.slice(-4) : a; }
+async function pool(items, n, fn) {
+  let i = 0;
+  await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => {
+    while (i < items.length) { const idx = i++; try { await fn(items[idx], idx); } catch (e) { console.warn(e); } }
+  }));
+}
+function chunk(arr, n) { const out = []; for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n)); return out; }
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("on"); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("on"), 1800); }
+
+// ------------------------------------------------------------ storage (always guarded)
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem("ts:" + k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem("ts:" + k, JSON.stringify(v)); } catch { /* full or blocked */ } },
+};
+const settings = Object.assign({
+  workerUrl: "", useJev: true, useX: false, jevMax: 40, xMax: 12, rpc: DEFAULT_RPC,
+  mode: "default", strict: true, chain: "all",
+}, LS.get("settings", {}));
+function saveSettings() { LS.set("settings", settings); }
+const workerBase = () => (settings.workerUrl || "").trim().replace(/\/+$/, "");
+
+// ------------------------------------------------------------ network
+// Direct browser fetch first; if a host blocks browsers (CORS/network error)
+// and a Worker is configured, fall back to the Worker's read-only relay and
+// remember that for the rest of the session.
+const relayHosts = new Set();
+class HttpError extends Error { constructor(status, url) { super(`HTTP ${status}`); this.status = status; this.url = url; } }
+
+async function rawFetch(url, init = {}, timeout = 15000) {
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), timeout);
+  try {
+    const r = await fetch(url, { ...init, signal: ctl.signal });
+    if (!r.ok) throw new HttpError(r.status, url);
+    return await r.json();
+  } finally { clearTimeout(t); }
+}
+async function getJSON(url, init = {}, timeout) {
+  const host = new URL(url).host;
+  const w = workerBase();
+  if (!relayHosts.has(host) || !w) {
+    try { return await rawFetch(url, init, timeout); }
+    catch (e) {
+      if (e instanceof HttpError || !w) throw e;
+      relayHosts.add(host);
+    }
+  }
+  return rawFetch(`${w}/relay?u=${encodeURIComponent(url)}`, init, timeout);
+}
+
+// GeckoTerminal: serialized with spacing, short cache, stop on repeated 429.
+const gtCache = new Map();
+let gtLast = 0, gtCount = 0, gtBlockedUntil = 0, gtDirectFails = 0;
+async function gtGet(path) {
+  const url = GT + path;
+  const c = gtCache.get(url);
+  if (c && Date.now() - c.t < 120000) return c.d;
+  if (Date.now() < gtBlockedUntil) throw new Error("GeckoTerminal rate limited");
+  if (Date.now() - gtLast > 60000) gtCount = 0;          // new minute window
+  const gap = gtCount < 4 ? 400 : 3000;                   // ~20/min sustained
+  const wait = gtLast + gap - Date.now();
+  gtLast = Math.max(Date.now(), gtLast + gap);
+  if (wait > 0) await sleep(wait);
+  gtCount++;
+  const init = { headers: { Accept: "application/json;version=20230302" } };
+  const w = workerBase();
+  try {
+    let d;
+    if (gtDirectFails >= 2 && w) d = await rawFetch(`${w}/relay?u=${encodeURIComponent(url)}`, init);
+    else {
+      try { d = await rawFetch(url, init); gtDirectFails = 0; }
+      catch (e) {
+        if (e instanceof HttpError) throw e;
+        gtDirectFails++;                                   // a 429 without CORS headers looks like this
+        if (!w) { gtBlockedUntil = Date.now() + 30000; throw new Error("GeckoTerminal blocked or rate limited"); }
+        d = await rawFetch(`${w}/relay?u=${encodeURIComponent(url)}`, init);
+      }
+    }
+    gtCache.set(url, { t: Date.now(), d });
+    return d;
+  } catch (e) {
+    if (e.status === 429) { gtBlockedUntil = Date.now() + 30000; }
+    throw e;
+  }
+}
+
+// ------------------------------------------------------------ discovery
+// Returns Map key "chain:address" -> seed { chain, address, sources:Set, profile, boost, gt }
+async function discover(mode, progress) {
+  const seeds = new Map();
+  const add = (chain, address, src, extra = {}) => {
+    if (!chain || !address) return;
+    const key = chain + ":" + (chain === "solana" || chain === "tron" ? address : address.toLowerCase());
+    let s = seeds.get(key);
+    if (!s) { s = { key, chain, address, sources: new Set() }; seeds.set(key, s); }
+    s.sources.add(src);
+    Object.assign(s, extra);
+  };
+  const errors = [];
+  const plan = gtPlan(mode);
+  const total = 3 + plan.length; let done = 0;
+  const tick = () => progress(++done / total, `Discovering… ${done}/${total} feeds`);
+
+  const dsFeeds = [
+    ["/token-profiles/latest/v1", "profile"],
+    ["/token-boosts/latest/v1", "boost"],
+    ["/token-boosts/top/v1", "boost-top"],
+  ];
+  const dsJob = Promise.all(dsFeeds.map(async ([p, src]) => {
+    try {
+      const arr = await getJSON(DS + p);
+      for (const it of Array.isArray(arr) ? arr : []) {
+        const extra = {};
+        if (src === "profile") extra.profile = it;
+        else extra.boost = { amount: num(it.totalAmount) || num(it.amount) || 0, it };
+        if (!extra.profile && it.description) extra.profileLite = it;
+        add(it.chainId, it.tokenAddress, src, extra);
+      }
+    } catch (e) { errors.push("DexScreener " + src + ": " + e.message); }
+    tick();
+  }));
+
+  const gtJob = (async () => {
+    for (const path of plan) {
+      try {
+        const d = await gtGet(path);
+        const net = path.split("/")[2];
+        const chain = GT_TO_DS[net];
+        const inc = new Map((d.included || []).map((x) => [x.id, x.attributes || {}]));
+        const dexM = path.match(/\/dexes\/([^/]+)\//);
+        const src = dexM ? "gt:" + dexM[1] : path.includes("new_pools") ? "gt:new" : path.includes("trending") ? "gt:trending" : path.includes("volume") ? "gt:volume" : "gt:txcount";
+        for (const p of d.data || []) {
+          const bid = p.relationships?.base_token?.data?.id || "";
+          const addr = inc.get(bid)?.address || bid.split("_").slice(1).join("_");
+          const dexId = p.relationships?.dex?.data?.id || (dexM ? dexM[1] : null);
+          add(chain, addr, src, { gt: { pool: p.attributes || {}, token: inc.get(bid) || {}, dexId } });
+        }
+      } catch (e) { errors.push("GeckoTerminal " + path.split("?")[0] + ": " + e.message); }
+      tick();
+    }
+  })();
+
+  await Promise.all([dsJob, gtJob]);
+  return { seeds, errors };
+}
+
+// ------------------------------------------------------------ market data
+// DexScreener batch pairs (30 addresses per call); GeckoTerminal pool as fallback.
+async function fetchPairs(chain, addresses, errors = []) {
+  const out = new Map();
+  await pool(chunk(addresses, 30), 3, async (group) => {
+    let arr;
+    try { arr = await getJSON(`${DS}/tokens/v1/${chain}/${group.join(",")}`); }
+    catch (e) { errors.push(`DexScreener pairs (${chain}): ${e.message}`); return; }
+    for (const p of Array.isArray(arr) ? arr : []) {
+      const a = p.baseToken?.address; if (!a) continue;
+      const k = chain === "solana" || chain === "tron" ? a : a.toLowerCase();
+      (out.get(k) || out.set(k, []).get(k)).push(p);
+    }
+  });
+  return out;
+}
+
+function bestPair(pairs) {
+  if (!pairs || !pairs.length) return null;
+  const withLiq = pairs.filter((p) => num(p.liquidity?.usd) > 0);
+  if (withLiq.length) return withLiq.sort((a, b) => num(b.liquidity.usd) - num(a.liquidity.usd))[0];
+  const curve = pairs.find((p) => CURVE_DEX.has(p.dexId));
+  return curve || pairs.sort((a, b) => (num(b.volume?.h24) || 0) - (num(a.volume?.h24) || 0))[0];
+}
+
+const W = ["m5", "h1", "h6", "h24"];
+function coinFromPair(seed, p, pairCount) {
+  const tx = {}, vol = {}, chg = {};
+  for (const w of W) {
+    tx[w] = { buys: num(p.txns?.[w]?.buys) || 0, sells: num(p.txns?.[w]?.sells) || 0 };
+    vol[w] = num(p.volume?.[w]);
+    chg[w] = num(p.priceChange?.[w]);
+  }
+  const info = p.info || {};
+  const prof = seed.profile || seed.profileLite || seed.boost?.it || {};
+  const links = [];
+  for (const s of info.socials || []) links.push({ type: (s.type || "").toLowerCase(), url: s.url });
+  for (const s of info.websites || []) links.push({ type: "website", url: s.url, label: s.label });
+  if (!links.length) for (const l of prof.links || []) links.push({ type: (l.type || (l.label || "website")).toLowerCase(), url: l.url });
+  const priceUsd = num(p.priceUsd), priceNative = num(p.priceNative);
+  return {
+    key: seed.key, chain: seed.chain, address: seed.address, sources: seed.sources,
+    symbol: p.baseToken?.symbol || seed.gt?.token?.symbol || "?", name: p.baseToken?.name || seed.gt?.token?.name || "",
+    dexId: p.dexId, pairAddress: p.pairAddress, pairUrl: p.url, labels: p.labels || [], pairCount,
+    source: "dexscreener",
+    market: {
+      price: priceUsd, nativeUsd: priceUsd && priceNative ? priceUsd / priceNative : null,
+      liq: num(p.liquidity?.usd), liqReported: num(p.liquidity?.usd) !== null,
+      mcap: num(p.marketCap) ?? num(p.fdv), fdv: num(p.fdv), vol, tx, chg,
+      buyers: null,
+    },
+    ageH: p.pairCreatedAt ? (Date.now() - p.pairCreatedAt) / 3.6e6 : null,
+    story: {
+      description: prof.description || "", links,
+      image: info.imageUrl || (String(prof.icon || "").startsWith("http") ? prof.icon : "") || seed.gt?.token?.image_url || "",
+      header: info.header || prof.header || "",
+      boosts: num(p.boosts?.active) || seed.boost?.amount || 0,
+      profile: Boolean(seed.profile), cto: Boolean(seed.profile?.cto),
+    },
+  };
+}
+
+function coinFromGT(seed) {
+  const a = seed.gt.pool, t = seed.gt.token || {};
+  const tx = {}, vol = {}, chg = {}, buyers = {};
+  for (const w of W) {
+    const x = a.transactions?.[w] || {};
+    tx[w] = { buys: num(x.buys) || 0, sells: num(x.sells) || 0 };
+    buyers[w] = num(x.buyers);
+    vol[w] = num(a.volume_usd?.[w]);
+    chg[w] = num(a.price_change_percentage?.[w]);
+  }
+  const dexId = (seed.gt.dexId || "").replace(/-(solana|bsc|robinhood)$/, "");
+  const prof = seed.profile || seed.profileLite || {};
+  return {
+    key: seed.key, chain: seed.chain, address: seed.address, sources: seed.sources,
+    symbol: t.symbol || (a.name || "?").split(" / ")[0], name: t.name || "",
+    dexId, pairAddress: a.address, pairUrl: `https://www.geckoterminal.com/${CHAINS[seed.chain]?.gt || seed.chain}/pools/${a.address}`,
+    labels: [], pairCount: 1, source: "geckoterminal",
+    market: {
+      price: num(a.base_token_price_usd), nativeUsd: num(a.quote_token_price_usd),
+      liq: num(a.reserve_in_usd), liqReported: num(a.reserve_in_usd) !== null,
+      mcap: num(a.market_cap_usd) ?? num(a.fdv_usd), fdv: num(a.fdv_usd), vol, tx, chg, buyers,
+    },
+    ageH: a.pool_created_at ? (Date.now() - Date.parse(a.pool_created_at)) / 3.6e6 : null,
+    story: {
+      description: prof.description || "", links: (prof.links || []).map((l) => ({ type: (l.type || l.label || "website").toLowerCase(), url: l.url })),
+      image: t.image_url && !String(t.image_url).includes("missing") ? t.image_url : "", header: prof.header || "",
+      boosts: seed.boost?.amount || 0, profile: Boolean(seed.profile), cto: Boolean(seed.profile?.cto),
+    },
+  };
+}
+
+async function buildCoins(seeds, progress) {
+  const byChain = new Map();
+  for (const s of seeds.values()) (byChain.get(s.chain) || byChain.set(s.chain, []).get(s.chain)).push(s);
+  const coins = []; const errors = [];
+  let done = 0; const total = byChain.size || 1;
+  await pool([...byChain.entries()], 3, async ([chain, list]) => {
+    const pairs = await fetchPairs(chain, list.map((s) => s.address), errors);
+    for (const s of list) {
+      const k = chain === "solana" || chain === "tron" ? s.address : s.address.toLowerCase();
+      const ps = pairs.get(k);
+      const bp = bestPair(ps);
+      if (bp) coins.push(coinFromPair(s, bp, ps.length));
+      else if (s.gt?.pool) coins.push(coinFromGT(s)); // GeckoTerminal fallback
+    }
+    progress(++done / total, `Market data… ${done}/${total} chains`);
+  });
+  return { coins: coins.filter((c) => c.market.price > 0), errors };
+}
+
+// ------------------------------------------------------------ security checks
+const secCache = new Map(); // key -> { t, sec }
+const SEVERE_RISK = /freeze author|mint author|honeypot|rugged|copycat|permanent delegate|non.?transferable|transfer fee|high tax|cannot buy|cannot sell|hidden owner|take back ownership|self.?destruct|made honeypots|change balances/i;
+
+function parseRugcheck(r) {
+  const risks = (r.risks || []).map((x) => ({ name: x.name, level: x.level, value: x.value || "", description: x.description || "" }));
+  const supply = num(r.token?.supply);
+  const marketKeys = new Set();
+  let lpLockedPct = null, curveMarket = false;
+  for (const m of r.markets || []) {
+    for (const k of [m.pubkey, m.liquidityAAccount, m.liquidityBAccount]) if (k) marketKeys.add(k);
+    if (/pump_fun$/.test(m.marketType || "")) curveMarket = true;
+    const l = num(m.lp?.lpLockedPct);
+    if (l !== null && !/pump_fun$/.test(m.marketType || "")) lpLockedPct = Math.max(lpLockedPct ?? 0, l);
+  }
+  for (const [addr, k] of Object.entries(r.knownAccounts || {})) if (/AMM|LOCKER|CURVE|POOL/i.test(k?.type || "")) marketKeys.add(addr);
+  const holders = (r.topHolders || []).filter((h) => !marketKeys.has(h.owner) && !marketKeys.has(h.address));
+  const pcts = holders.map((h) => num(h.pct) || 0);
+  const insiderPct = holders.filter((h) => h.insider).reduce((s, h) => s + (num(h.pct) || 0), 0);
+  const nets = Array.isArray(r.insiderNetworks) ? r.insiderNetworks : [];
+  const creatorTokens = Array.isArray(r.creatorTokens) ? r.creatorTokens.filter((t) => (t.mint || t.address) !== r.mint) : null;
+  const creatorPct = supply && num(r.creatorBalance) !== null ? (num(r.creatorBalance) / supply) * 100 : null;
+  return {
+    checker: "rugcheck", ok: true, url: `https://rugcheck.xyz/tokens/${r.mint}`,
+    risks, scoreNorm: num(r.score_normalised),
+    rugged: Boolean(r.rugged),
+    mintAuthority: Boolean(r.mintAuthority || r.token?.mintAuthority),
+    freezeAuthority: Boolean(r.freezeAuthority || r.token?.freezeAuthority),
+    mutable: Boolean(r.tokenMeta?.mutable),
+    transferFeePct: num(r.transferFee?.pct),
+    honeypot: false, buyTax: null, sellTax: null,
+    holders: {
+      total: num(r.totalHolders),
+      top1: pcts.length ? Math.max(...pcts) : null,
+      top10: pcts.length ? pcts.slice(0, 10).reduce((a, b) => a + b, 0) : null,
+      insiderPct: holders.length ? insiderPct : null,
+      insiderNetworks: nets.length, insiderNetworkSize: nets.reduce((s, n) => s + (num(n.size) || num(n.activeAccounts) || 0), 0),
+      graphInsiders: num(r.graphInsidersDetected),
+      creatorPct, creator: r.creator || null,
+      priorLaunches: creatorTokens ? creatorTokens.length : null,
+    },
+    lpLockedPct, curveMarket,
+    launchpad: r.launchpad?.name || r.deployPlatform || null,
+  };
+}
+
+function parseRugcheckSummary(r, mint) {
+  return {
+    checker: "rugcheck", ok: true, partial: true, url: `https://rugcheck.xyz/tokens/${mint}`,
+    risks: (r.risks || []).map((x) => ({ name: x.name, level: x.level, value: x.value || "", description: x.description || "" })),
+    scoreNorm: num(r.score_normalised), lpLockedPct: num(r.lpLockedPct),
+    rugged: false, mintAuthority: null, freezeAuthority: null, honeypot: false, buyTax: null, sellTax: null,
+    holders: { total: null, top1: null, top10: null, insiderPct: null, insiderNetworks: 0, graphInsiders: null, creatorPct: null, priorLaunches: null },
+  };
+}
+
+const DEAD = /^0x0{40}$|^0x0{36}dead$|^0x000000000000000000000000000000000000dead$/i;
+function parseGoPlus(d, chain, address) {
+  const f = (k) => d[k] === "1";
+  const n = (k) => num(d[k]);
+  const holders = (d.holders || []).filter((h) => !DEAD.test(h.address) && !(h.is_locked === 1 || h.is_locked === "1"));
+  const pcts = holders.filter((h) => !(h.is_contract === 1 || h.is_contract === "1")).map((h) => (num(h.percent) || 0) * 100);
+  let lpLockedPct = null;
+  if (Array.isArray(d.lp_holders) && d.lp_holders.length) {
+    lpLockedPct = d.lp_holders.reduce((s, h) => s + ((h.is_locked === 1 || h.is_locked === "1" || DEAD.test(h.address)) ? (num(h.percent) || 0) * 100 : 0), 0);
+  }
+  const risks = [];
+  const R = (cond, name, level) => { if (cond) risks.push({ name, level }); };
+  R(f("is_honeypot"), "Honeypot", "danger");
+  R(f("cannot_sell_all"), "Cannot sell all", "danger");
+  R(f("cannot_buy"), "Cannot buy", "danger");
+  R(f("owner_change_balance"), "Owner can change balances", "danger");
+  R(f("hidden_owner"), "Hidden owner", "danger");
+  R(f("can_take_back_ownership"), "Can take back ownership", "danger");
+  R(f("selfdestruct"), "Self-destruct", "danger");
+  R(f("is_mintable"), "Mintable", "warn");
+  R(f("transfer_pausable"), "Transfers can be paused", "warn");
+  R(f("is_blacklisted"), "Has blacklist", "warn");
+  R(f("slippage_modifiable"), "Tax can be changed", "warn");
+  R(f("trading_cooldown"), "Trading cooldown", "warn");
+  R(f("is_proxy"), "Upgradeable proxy", "warn");
+  R(d.is_open_source === "0", "Contract not verified", "warn");
+  R(f("honeypot_with_same_creator"), "Creator made honeypots before", "danger");
+  const buy = n("buy_tax"), sell = n("sell_tax");
+  R(sell !== null && sell > 0.1, `Sell tax ${(sell * 100).toFixed(0)}%`, "danger");
+  R(sell !== null && sell > 0.05 && sell <= 0.1, `Sell tax ${(sell * 100).toFixed(0)}%`, "warn");
+  R(buy !== null && buy > 0.1, `Buy tax ${(buy * 100).toFixed(0)}%`, "warn");
+  return {
+    checker: "goplus", ok: true, url: `https://gopluslabs.io/token-security/${CHAINS[chain].gp}/${address}`,
+    risks, scoreNorm: null, rugged: false,
+    honeypot: f("is_honeypot") || f("cannot_sell_all"),
+    buyTax: buy !== null ? buy * 100 : null, sellTax: sell !== null ? sell * 100 : null,
+    mintAuthority: false, freezeAuthority: false, mintable: f("is_mintable"), pausable: f("transfer_pausable"),
+    ownerChangeBalance: f("owner_change_balance"), hiddenOwner: f("hidden_owner"), proxy: f("is_proxy"), openSource: d.is_open_source === "1",
+    holders: {
+      total: n("holder_count"), top1: pcts.length ? Math.max(...pcts) : null, top10: pcts.length ? pcts.slice(0, 10).reduce((a, b) => a + b, 0) : null,
+      insiderPct: null, insiderNetworks: 0, graphInsiders: null,
+      creatorPct: n("creator_percent") !== null ? n("creator_percent") * 100 : null, creator: d.creator_address || null,
+      ownerPct: n("owner_percent") !== null ? n("owner_percent") * 100 : null,
+      priorLaunches: null,
+    },
+    lpLockedPct,
+  };
+}
+
+async function securityFor(coin) {
+  const hit = secCache.get(coin.key);
+  if (hit && Date.now() - hit.t < 600000) return hit.sec;
+  const ch = CHAINS[coin.chain];
+  let sec;
+  if (!ch || !ch.checker) {
+    sec = { checker: "none", ok: false, reason: `No security checker for ${coin.chain}` };
+  } else if (ch.checker === "rugcheck") {
+    try { sec = parseRugcheck(await getJSON(`${RUG}/tokens/${coin.address}/report`, {}, 20000)); }
+    catch (e) {
+      if (e.status === 429) sec = { checker: "rugcheck", ok: false, reason: "RugCheck rate limited this scan" };
+      else try { sec = parseRugcheckSummary(await getJSON(`${RUG}/tokens/${coin.address}/report/summary`), coin.address); }
+      catch (e2) { sec = { checker: "rugcheck", ok: false, reason: "RugCheck unavailable: " + e2.message }; }
+    }
+  } else {
+    try {
+      const d = await getJSON(`${GP}/token_security/${ch.gp}?contract_addresses=${coin.address}`);
+      const res = d?.result || {};
+      const row = res[coin.address.toLowerCase()] || res[coin.address] || Object.values(res)[0];
+      sec = row && Object.keys(row).length > 3 ? parseGoPlus(row, coin.chain, coin.address) : { checker: "goplus", ok: false, reason: "GoPlus returned no data (not indexed yet, or rate limited)" };
+    } catch (e) { sec = { checker: "goplus", ok: false, reason: "GoPlus unavailable: " + e.message }; }
+  }
+  secCache.set(coin.key, { t: sec.ok ? Date.now() : Date.now() - 480000, sec }); // failures retry after ~2 min
+  return sec;
+}
+
+// ------------------------------------------------------------ pump.fun bonding curves (Solana RPC)
+let curveDisc = null;
+async function curveDiscriminator() {
+  if (!curveDisc) {
+    const h = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode("account:BondingCurve")));
+    curveDisc = h.slice(0, 8);
+  }
+  return curveDisc;
+}
+function b64bytes(s) { const bin = atob(s); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; }
+
+async function rpc(method, params) {
+  const body = JSON.stringify({ jsonrpc: "2.0", id: 1, method, params });
+  const url = settings.rpc || DEFAULT_RPC;
+  const init = { method: "POST", headers: { "Content-Type": "application/json" }, body };
+  try { return await rawFetch(url, init, 15000); }
+  catch (e) {
+    const w = workerBase();
+    if (!w || url !== DEFAULT_RPC) throw e;
+    return rawFetch(`${w}/relay?u=${encodeURIComponent(url)}`, init, 15000);
+  }
+}
+
+async function readCurves(coins) {
+  const targets = coins.filter((c) => c.chain === "solana" && (c.dexId === "pumpfun" || c.dexId === "pump-fun") && c.pairAddress);
+  if (!targets.length) return;
+  const disc = await curveDiscriminator();
+  for (const group of chunk(targets, 100)) {
+    let res;
+    try { res = await rpc("getMultipleAccounts", [group.map((c) => c.pairAddress), { encoding: "base64", commitment: "confirmed" }]); }
+    catch (e) { for (const c of group) c.curve = { validated: false, reason: "RPC unavailable: " + e.message }; continue; }
+    const vals = res?.result?.value || [];
+    group.forEach((c, i) => {
+      const acc = vals[i];
+      if (!acc) { c.curve = { validated: false, reason: "curve account not found" }; return; }
+      if (acc.owner !== PUMP_PROGRAM) { c.curve = { validated: false, reason: "account not owned by pump.fun program" }; return; }
+      const b = b64bytes(acc.data[0]);
+      if (b.length < 49 || !disc.every((x, j) => b[j] === x)) { c.curve = { validated: false, reason: "not a BondingCurve account" }; return; }
+      const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
+      const realTok = dv.getBigUint64(24, true), realSol = dv.getBigUint64(32, true), supply = dv.getBigUint64(40, true);
+      const complete = b[48] === 1;
+      const sold = 1 - Number(realTok) / Number(PUMP_INITIAL_REAL_TOKENS);
+      c.curve = {
+        validated: true, graduated: complete, pctSold: clamp(sold) * 100,
+        solRaised: Number(realSol) / 1e9, standardSupply: supply === 1000000000000000n,
+      };
+      if (!c.market.liqReported && c.market.nativeUsd) c.market.liq = c.curve.solRaised * c.market.nativeUsd;
+    });
+  }
+}
+
+// ------------------------------------------------------------ bubblemaps
+function bubblemapsUrl(c) {
+  const ch = CHAINS[c.chain];
+  return ch?.bm ? `https://app.bubblemaps.io/${ch.bm}/token/${c.address}` : null;
+}
+const bmMem = LS.get("bm", {});
+async function bubblemapsAvailable(c) {
+  const ch = CHAINS[c.chain];
+  if (!ch?.bm || ch.bmNoAvail) return null;
+  const k = c.key, hit = bmMem[k];
+  if (hit && Date.now() - hit.t < 6 * 3.6e6) return hit.v;
+  try {
+    const d = await getJSON(`${BM_AVAIL}?chain=${ch.bm}&token=${c.address}`, {}, 8000);
+    const v = d?.status === "OK" ? Boolean(d.availability) : null;
+    bmMem[k] = { t: Date.now(), v }; LS.set("bm", bmMem);
+    return v;
+  } catch { bmMem[k] = { t: Date.now() - 5.5 * 3.6e6, v: null }; return null; } // retry unknowns after ~30 min
+}
+
+// ------------------------------------------------------------ derived reads (code heuristics)
+function crowdOf(c) {
+  const t = c.market.tx;
+  const tx1 = t.h1.buys + t.h1.sells, tx6 = t.h6.buys + t.h6.sells, tx5m = t.m5.buys + t.m5.sells;
+  const prior = Math.max(0, tx6 - tx1) / 5;
+  return {
+    trades1h: tx1, trades5m: tx5m, tradesPerHourPrior5h: Math.round(prior * 10) / 10,
+    acceleration: prior > 0 ? Math.round((tx1 / prior) * 100) / 100 : (tx1 > 0 ? null : 0),
+    avgTradeUsd1h: tx1 ? Math.round((c.market.vol.h1 || 0) / tx1) : null,
+    buyShare1h: tx1 ? Math.round((t.h1.buys / tx1) * 100) / 100 : null,
+    uniqueBuyers1h: c.market.buyers?.h1 ?? null,
+  };
+}
+function heatOf(c) {
+  const g = c.market.chg;
+  const x = 0.45 * (g.m5 ?? 0) / 5 + 0.35 * (g.h1 ?? 0) / 20 + 0.2 * (g.h6 ?? 0) / 60;
+  return Math.round(50 + 50 * Math.tanh(x));
+}
+function trendScoreOf(cr) {
+  const volume = clamp(Math.log10(1 + cr.trades1h) / Math.log10(2000));
+  const acc = cr.acceleration === null ? 0.5 : clamp((cr.acceleration - 0.5) / 1.5);
+  let size = 1;
+  if (cr.avgTradeUsd1h !== null) { if (cr.avgTradeUsd1h > 3000) size = 0.5; else if (cr.avgTradeUsd1h < 8) size = 0.6; }
+  return clamp(0.5 * volume + 0.35 * acc + 0.15 * size);
+}
+function loreScoreOf(c) {
+  const s = c.story, types = new Set(s.links.map((l) => l.type));
+  let x = 0;
+  x += clamp(s.description.length / 280) * 0.3;
+  x += (types.has("twitter") || types.has("x") ? 0.2 : 0) + (types.has("telegram") ? 0.1 : 0) + (types.has("website") ? 0.15 : 0) + (types.has("discord") ? 0.05 : 0);
+  x += (s.image ? 0.07 : 0) + (s.header ? 0.08 : 0) + (s.profile ? 0.05 : 0);
+  return clamp(x);
+}
+function phaseRule(c, cr) {
+  const g = c.market.chg;
+  if (cr.trades1h < 15 && Math.abs(g.h1 ?? 0) < 5) return "QUIET";
+  if ((g.h24 ?? 0) > 300 || ((g.h6 ?? 0) > 150 && ((g.h1 ?? 0) < 0 || (cr.acceleration ?? 1) < 0.8))) return "EXTENDED";
+  if ((c.ageH ?? 99) < 6 && (g.h6 ?? g.h1 ?? 0) < 100) return "EARLY";
+  if (((g.h1 ?? 0) > 5 && (cr.acceleration ?? 1) >= 1) || (g.h6 ?? 0) > 20) return "RUNNING";
+  return (c.ageH ?? 99) < 24 ? "EARLY" : "QUIET";
+}
+function reboundRule(c, cr) {
+  const g = c.market.chg;
+  return ((g.h24 ?? 0) < -40 || (g.h6 ?? 0) < -35) && (g.h1 ?? 0) > 5 && (g.m5 ?? 0) >= 0 && (cr.buyShare1h ?? 0) > 0.52;
+}
+function setupRule(c, cr) {
+  const g = c.market.chg;
+  return Math.abs(g.h1 ?? 99) < 6 && Math.abs(g.h6 ?? 99) < 15 && (cr.acceleration ?? 0) > 1.3 && (cr.buyShare1h ?? 0) > 0.55 && cr.trades1h >= 30;
+}
+function officialHandle(c) {
+  for (const l of c.story.links) {
+    if (!/twitter|^x$/.test(l.type) && !/(twitter|x)\.com\//.test(l.url || "")) continue;
+    const m = String(l.url || "").match(/(?:twitter|x)\.com\/([A-Za-z0-9_]{1,15})(?:[/?#]|$)/);
+    if (m && !["i", "search", "home", "intent", "share"].includes(m[1].toLowerCase())) return m[1];
+  }
+  return null;
+}
+
+// Attention vs priced-in, as percentiles within this scan.
+function computeGaps(coins) {
+  const att = coins.map((c) => Math.log10(1 + (c.market.tx.h24.buys + c.market.tx.h24.sells)) + 0.02 * Math.min(c.story.boosts, 500) + 0.4 * c.story.links.length + (c.story.profile ? 1 : 0) + (c.x?.ca?.uniqueAuthors ? Math.log10(1 + c.x.ca.uniqueAuthors) : 0));
+  const cap = coins.map((c) => Math.log10(1 + (c.market.mcap || 0)));
+  const rank = (arr) => { const s = [...arr].sort((a, b) => a - b); return arr.map((v) => s.length > 1 ? s.indexOf(v) / (s.length - 1) : 0.5); };
+  const ra = rank(att), rc = rank(cap);
+  coins.forEach((c, i) => { c.derived.attention = Math.round(ra[i] * 100) / 100; c.derived.pricedIn = Math.round(rc[i] * 100) / 100; c.derived.gap = Math.round((ra[i] - rc[i]) * 100) / 100; });
+}
+
+// ------------------------------------------------------------ rules (evidence prep + tie-break reference)
+function ruleVerdict(c) {
+  const s = c.sec;
+  if (!s || !s.ok) return { v: "UNKNOWN", hardFail: [] };
+  const hardFail = [];
+  if (s.rugged) hardFail.push("rugged");
+  if (s.honeypot) hardFail.push("honeypot / cannot sell");
+  if (s.sellTax !== null && s.sellTax > 10) hardFail.push(`sell tax ${s.sellTax.toFixed(0)}%`);
+  if (s.mintAuthority) hardFail.push("mint authority active");
+  if (s.freezeAuthority) hardFail.push("freeze authority active");
+  if (s.ownerChangeBalance) hardFail.push("owner can change balances");
+  const danger = s.risks.filter((r) => r.level === "danger");
+  const warn = s.risks.filter((r) => r.level === "warn");
+  for (const r of danger) if (SEVERE_RISK.test(r.name) && !hardFail.includes(r.name.toLowerCase())) hardFail.push(r.name.toLowerCase());
+  if (hardFail.length || danger.length >= 2) return { v: "FAIL", hardFail, danger: danger.length, warn: warn.length };
+  if (danger.length || warn.length >= 2 || (s.sellTax ?? 0) > 5 || s.mintable || s.pausable) return { v: "CAUTION", hardFail, danger: danger.length, warn: warn.length };
+  return { v: "PASS", hardFail, danger: danger.length, warn: warn.length };
+}
+
+function onCurve(c) { return CURVE_DEX.has(c.dexId) && !(c.curve && c.curve.graduated); }
+function lpLockedPct(c) {
+  if (onCurve(c) && c.curve?.validated) return 100; // held by the bonding-curve program
+  return c.sec?.lpLockedPct ?? null;
+}
+
+function rulePillars(c) {
+  const s = c.sec, rv = c.rv, h = s?.ok ? s.holders : null;
+  // Security 35
+  let sec;
+  if (rv.v === "UNKNOWN") sec = 8;
+  else if (rv.v === "FAIL") sec = rv.hardFail.length ? 0 : 5;
+  else if (rv.v === "CAUTION") sec = clamp(24 - 4 * rv.danger - 1.5 * Math.max(0, rv.warn - 1), 10, 24);
+  else sec = clamp(35 - 2 * rv.warn, 27, 35);
+  // Holder research 25
+  let hold = 6;
+  if (h && (h.top1 !== null || h.top10 !== null)) {
+    hold = 0;
+    const t1 = h.top1 ?? 100, t10 = h.top10 ?? 100;
+    hold += t1 <= 3 ? 8 : t1 <= 5 ? 6 : t1 <= 10 ? 3 : 0;
+    hold += t10 <= 20 ? 7 : t10 <= 30 ? 5 : t10 <= 45 ? 2 : 0;
+    const ins = (h.insiderPct ?? 0), nets = h.insiderNetworks || 0, graph = h.graphInsiders ?? null;
+    hold += (ins < 1 && nets === 0 && !graph) ? 5 : (ins < 5 && nets <= 1) ? 2 : 0;
+    hold += h.priorLaunches === null ? 1 : h.priorLaunches <= 1 ? 3 : h.priorLaunches < 5 ? 1 : 0;
+    hold += (h.total ?? 0) >= 500 ? 2 : (h.total ?? 0) >= 150 ? 1 : 0;
+  }
+  // Exit depth 15
+  const liq = c.market.liq || 0, mcap = c.market.mcap || 0;
+  const ratio = mcap ? liq / mcap : 0;
+  let exit = ratio >= 0.15 ? 8 : ratio >= 0.08 ? 6 : ratio >= 0.04 ? 3 : 0;
+  exit += liq >= 100000 ? 4 : liq >= 30000 ? 3 : liq >= 10000 ? 2 : liq >= 5000 ? 1 : 0;
+  const lock = lpLockedPct(c);
+  exit += lock === null ? 0.5 : lock >= 95 ? 3 : lock >= 50 ? 1.5 : 0;
+  // Structural validation 5
+  let struct = c.source === "dexscreener" ? 2 : 1;
+  if (onCurve(c)) struct += c.curve?.validated ? 3 : 0;
+  else struct += (c.market.fdv === null || mcap <= c.market.fdv * 1.05) && c.ageH !== null ? 3 : 1;
+  // Activity 20, stage-aware
+  const turnover = mcap ? (c.market.vol.h24 || 0) / mcap : 0;
+  const volScore = clamp(0.5 * clamp(Math.log10(1 + (c.market.vol.h24 || 0)) / 6) + 0.5 * clamp(turnover));
+  const young = (c.ageH ?? 999) < 24;
+  const act = young ? 10 * c.derived.loreScore + 10 * volScore : 10 * c.derived.trendScore + 10 * volScore;
+  const P = { security: +sec.toFixed(1), holders: +hold.toFixed(1), exitDepth: +exit.toFixed(1), structure: +struct.toFixed(1), activity: +act.toFixed(1) };
+  P.total = +(P.security + P.holders + P.exitDepth + P.structure + P.activity).toFixed(1);
+  return P;
+}
+const gradeFromScore = (t) => t >= 80 ? "A" : t >= 66 ? "B" : t >= 52 ? "C" : t >= 38 ? "D" : "F";
+const gi = (g) => GRADES.indexOf(g);
+const worse = (a, b) => (gi(a) >= gi(b) ? a : b);
+
+function capsFor(c, dupeLosers) {
+  const caps = [];
+  if (c.rv.v === "UNKNOWN") caps.push("unknown security verdict");
+  const young = (c.ageH ?? 999) < 24;
+  const lock = lpLockedPct(c);
+  if (young && ((c.market.liq || 0) < 8000 || (lock !== null && lock < 80) || (lock === null && !onCurve(c)))) caps.push("thin or unlocked LP on a young coin");
+  if (dupeLosers.has(c.key)) caps.push("duplicate ticker (a deeper-liquidity CA owns the name)");
+  if ((c.sec?.holders?.priorLaunches ?? 0) >= 5) caps.push(`serial deployer (${c.sec.holders.priorLaunches} prior launches)`);
+  if (onCurve(c) && !c.curve?.validated) caps.push("bonding curve not validated");
+  if (c.sec?.partial) caps.push("security report partial (RugCheck summary only)");
+  return caps;
+}
+
+function duplicateLosers(coins) {
+  const bySym = new Map();
+  for (const c of coins) {
+    const s = String(c.symbol || "").trim().toUpperCase().replace(/^\$/, "");
+    if (!s) continue;
+    (bySym.get(s) || bySym.set(s, []).get(s)).push(c);
+  }
+  const losers = new Set();
+  for (const list of bySym.values()) {
+    if (list.length < 2) continue;
+    list.sort((a, b) => (b.market.liq || 0) - (a.market.liq || 0));
+    list.slice(1).forEach((c) => losers.add(c.key));
+  }
+  return losers;
+}
+
+// Everything code can compute before Jev looks at the coin.
+function prepareEvidence(c) {
+  c.rv = ruleVerdict(c);
+  const cr = crowdOf(c);
+  c.crowd = cr;
+  c.derived = Object.assign(c.derived || {}, {
+    heat: heatOf(c), trendScore: trendScoreOf(cr), loreScore: loreScoreOf(c),
+    phase: phaseRule(c, cr), rebound: reboundRule(c, cr), setup: setupRule(c, cr),
+  });
+  c.pillars = rulePillars(c);
+  c.ruleGrade = gradeFromScore(c.pillars.total);
+}
+
+// ------------------------------------------------------------ Jev: state packet
+function r2(x) { return x === null || x === undefined || !Number.isFinite(x) ? null : Math.round(x * 100) / 100; }
+function jevState(c) {
+  const s = c.sec || {}, h = s.holders || {};
+  const types = [...new Set(c.story.links.map((l) => l.type))];
+  return {
+    coin: {
+      name: c.name, symbol: c.symbol, chain: c.chain, ageHours: r2(c.ageH),
+      stage: (c.ageH ?? 999) < 24 ? "young" : "older", dex: c.dexId,
+      launchpad: LAUNCHPAD_NAME[c.dexId] || s.launchpad || null, onBondingCurve: onCurve(c),
+    },
+    security: s.ok ? {
+      checker: s.checker, partialReport: Boolean(s.partial), riskScoreNormalised: s.scoreNorm,
+      risks: s.risks.slice(0, 12).map((r) => ({ name: r.name, level: r.level })),
+      honeypot: s.honeypot, buyTaxPct: r2(s.buyTax), sellTaxPct: r2(s.sellTax),
+      mintAuthorityActive: s.mintAuthority, freezeAuthorityActive: s.freezeAuthority,
+      mintable: s.mintable ?? null, pausable: s.pausable ?? null, ownerCanChangeBalance: s.ownerChangeBalance ?? null,
+      hiddenOwner: s.hiddenOwner ?? null, upgradeableProxy: s.proxy ?? null, verifiedSource: s.openSource ?? null,
+      mutableMetadata: s.mutable ?? null, rugged: s.rugged, transferFeePct: s.transferFeePct ?? null,
+    } : { checker: s.checker || "none", available: false, reason: s.reason || "no checker" },
+    holders: s.ok ? {
+      total: h.total, topHolderPct: r2(h.top1), top10Pct: r2(h.top10), insiderHoldersPct: r2(h.insiderPct),
+      insiderNetworks: h.insiderNetworks, insiderNetworkAccounts: h.insiderNetworkSize ?? null, graphInsidersDetected: h.graphInsiders,
+      creatorHoldsPct: r2(h.creatorPct), creatorPriorLaunches: h.priorLaunches,
+    } : { available: false },
+    liquidity: {
+      usd: r2(c.market.liq), lpLockedPct: r2(lpLockedPct(c)), liqToMcap: c.market.mcap ? r2(c.market.liq / c.market.mcap) : null,
+      source: onCurve(c) ? "bonding curve" : "pool", pairsFound: c.pairCount,
+    },
+    curve: c.curve ? { validated: c.curve.validated, pctSold: r2(c.curve.pctSold), solRaised: r2(c.curve.solRaised), graduated: c.curve.graduated ?? null, reason: c.curve.reason || null } : null,
+    market: { priceUsd: c.market.price, marketCap: r2(c.market.mcap), fdv: r2(c.market.fdv), volume: c.market.vol, txns: c.market.tx, priceChange: c.market.chg },
+    crowd: c.crowd,
+    story: {
+      description: (c.story.description || "").slice(0, 500), linkTypes: types, hasImage: Boolean(c.story.image),
+      hasBanner: Boolean(c.story.header), boosts: c.story.boosts, dexProfile: c.story.profile, communityTakeover: c.story.cto,
+    },
+    x: c.x && !c.x.error ? { provided: true, contractMentions: c.x.ca, tickerMentions: c.x.ticker, officialAccount: c.x.official } : { provided: false },
+    derived: { heat: c.derived.heat, attention: c.derived.attention, pricedIn: c.derived.pricedIn, gap: c.derived.gap },
+    rules: { pillars: c.pillars, composite: c.pillars.total, grade: c.ruleGrade, verdict: c.rv.v, capsAtC: c.caps },
+  };
+}
+function fingerprint(c) {
+  const b = (x) => x ? Math.round(Math.log(1 + x) * 4) : 0;
+  return [c.key, b(c.market.mcap), b(c.market.liq), b(c.crowd.trades1h), c.rv.v, c.caps.length, c.x ? 1 : 0].join("|");
+}
+
+// ------------------------------------------------------------ Jev: calls
+const jevCache = new Map(); // fingerprint -> { t, answers }
+const jevStatus = { ok: null, msg: "" };
+async function askJev(coins, progress) {
+  const w = workerBase();
+  if (!w || !settings.useJev) { jevStatus.ok = null; jevStatus.msg = !w ? "no Worker set" : "Jev turned off"; return; }
+  const todo = [];
+  for (const c of coins) {
+    const fp = fingerprint(c), hit = jevCache.get(fp);
+    if (hit && Date.now() - hit.t < 600000) c.jev = hit.answers; else todo.push({ c, fp });
+  }
+  let done = 0, failed = 0, lastErr = "";
+  await pool(chunk(todo, 10), 3, async (group) => {
+    try {
+      const res = await rawFetch(`${w}/jev`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ coins: group.map(({ c }) => ({ id: c.key, state: jevState(c) })) }),
+      }, 60000);
+      for (const { c, fp } of group) {
+        const r = res.results?.[c.key];
+        if (r?.answers) { c.jev = r.answers; jevCache.set(fp, { t: Date.now(), answers: r.answers }); }
+        else { failed++; lastErr = r?.error || "no answer"; c.jevError = lastErr; }
+      }
+    } catch (e) { failed += group.length; lastErr = e.message; group.forEach(({ c }) => (c.jevError = e.message)); }
+    done += group.length;
+    progress(done / Math.max(1, todo.length), `Jev deciding… ${done}/${todo.length}`);
+  });
+  jevStatus.ok = failed < Math.max(1, todo.length) || !todo.length;
+  jevStatus.msg = failed ? `Jev failed on ${failed}/${todo.length}: ${lastErr}` : "";
+}
+
+// ------------------------------------------------------------ decision (Jev decides, code breaks ties, code caps)
+// Normalised by the Worker, but still defensive: keys are matched case-insensitively
+// against the allowed options, and a missing distribution falls back to the choice.
+function sortedProbs(ans, allowed) {
+  const out = [];
+  const p = ans && typeof ans.probabilities === "object" && ans.probabilities ? ans.probabilities : {};
+  for (const [k, v] of Object.entries(p)) {
+    const key = allowed ? allowed.find((a) => a.toLowerCase() === String(k).toLowerCase()) : k;
+    const n = num(v);
+    if (key && n !== null) out.push({ k: key, p: n });
+  }
+  return out.sort((a, b) => b.p - a.p);
+}
+const pts = (p) => Math.round(p * 100);
+function validChoice(ans, allowed) {
+  const c = ans && ans.choice ? allowed.find((a) => a.toLowerCase() === String(ans.choice).toLowerCase()) : null;
+  return c || null;
+}
+// Returns a 0..1 position for a Score answer, or null when it can't be read safely.
+function scoreFraction(ans, nLevels = 5) {
+  if (!ans) return null;
+  if (num(ans.fraction) !== null) return clamp(num(ans.fraction)); // Worker-normalised
+  const p = ans.probabilities;
+  if (p && typeof p === "object") {
+    let e = 0, tot = 0;
+    for (const [k, v] of Object.entries(p)) { if (/^\d+$/.test(k) && +k < nLevels) { e += +k * (num(v) || 0); tot += num(v) || 0; } }
+    if (tot > 0) return clamp(e / tot / (nLevels - 1));
+  }
+  return null;
+}
+
+function decide(c) {
+  const J = c.jev;
+  const d = { source: J ? "jev" : "rules", notes: [], grade: null, verdict: null, phase: null };
+  const rv = c.rv.v, rg = c.ruleGrade;
+  const VERD = ["PASS", "CAUTION", "FAIL"];
+
+  // ---- Verdict (Jev decides; ties go stricter; hard failures and missing data are enforced by code)
+  if (rv === "UNKNOWN") { d.verdict = "UNKNOWN"; d.verdictNote = "no security checker data, so no pass is possible"; }
+  else {
+    let v = null;
+    if (J?.verdict) {
+      const s = sortedProbs(J.verdict, VERD);
+      d.verdictProbs = s;
+      if (s.length) {
+        const ties = s.filter((x) => pts(s[0].p) - pts(x.p) < pts(TIE_MARGIN));
+        v = ties.length > 1 ? ties.sort((a, b) => VERDICT_SEVERITY[b.k] - VERDICT_SEVERITY[a.k])[0].k : s[0].k;
+        if (ties.length > 1) d.verdictNote = `tie between ${ties.map((t) => `${t.k} ${pts(t.p)}%`).join(" / ")}: took the stricter`;
+      } else v = validChoice(J.verdict, VERD);
+    }
+    if (!v) { v = rv; if (J) d.verdictNote = "Jev verdict unreadable, used the rules verdict"; }
+    if (c.rv.hardFail.length && v !== "FAIL") { v = "FAIL"; d.verdictNote = "hard security failure: " + c.rv.hardFail.join(", "); }
+    d.verdict = v;
+  }
+
+  // ---- Grade (Jev decides; code breaks close ties toward the evidence, then toward caution)
+  let g = null;
+  if (J?.grade) {
+    const s = sortedProbs(J.grade, GRADES);
+    const choice = validChoice(J.grade, GRADES);
+    if (s.length) {
+      d.gradeProbs = s;
+      const top = s[0];
+      const ties = s.filter((x) => pts(top.p) - pts(x.p) < pts(TIE_MARGIN));
+      if (ties.length > 1) {
+        const dist = (x) => Math.abs(gi(x.k) - gi(rg));
+        const best = Math.min(...ties.map(dist));
+        const near = ties.filter((x) => dist(x) === best);
+        g = near.map((x) => x.k).reduce(worse);
+        d.tie = true;
+        d.notes.push(`tie-break: Jev split ${ties.map((t) => `${t.k} ${pts(t.p)}%`).join(" / ")}; rules evidence says ${rg}${near.length > 1 ? ", still even, so took the lower grade" : ""} → ${g}`);
+      } else if (top.p < UNSURE_BELOW) {
+        g = worse(top.k, rg);
+        d.notes.push(`Jev unsure (top ${top.k} at ${pts(top.p)}%): took the more cautious of Jev and rules (${rg}) → ${g}`);
+      } else g = top.k;
+    } else if (choice) {
+      g = worse(choice, rg);
+      d.notes.push(`Jev chose ${choice} without probabilities, so took the more cautious of Jev and rules (${rg}) → ${g}`);
+    }
+  }
+  if (!g) {
+    g = rg; d.source = "rules";
+    d.notes.push(J ? "Jev grade unreadable, rules-only" : c.jevError ? `rules-only (Jev: ${c.jevError})` : "rules-only (Jev not consulted)");
+  }
+  d.preCapGrade = g;
+  if (d.verdict === "FAIL") { if (gi(g) < gi("D")) d.notes.push("security FAIL caps the grade at D"); g = worse(g, "D"); }
+  if (c.caps.length && gi(g) < gi("C")) g = "C";
+  d.grade = g;
+
+  // ---- Phase
+  const PH = ["EARLY", "RUNNING", "EXTENDED", "QUIET"];
+  const ps = J?.phase ? sortedProbs(J.phase, PH) : [];
+  if (ps.length) {
+    const ties = ps.filter((x) => pts(ps[0].p) - pts(x.p) < pts(TIE_MARGIN));
+    d.phaseTie = ties.length > 1;
+    d.phase = d.phaseTie && ties.some((t) => t.k === c.derived.phase) ? c.derived.phase : ps[0].k;
+  } else d.phase = (J?.phase && validChoice(J.phase, PH)) || c.derived.phase;
+
+  // ---- Reads (Jev when readable, code heuristic otherwise; the card says which)
+  const jf = (a) => (a ? scoreFraction(a, 5) : null);
+  d.heat = jf(J?.heat) ?? c.derived.heat / 100;
+  d.trend = jf(J?.trend) ?? c.derived.trendScore;
+  d.lore = jf(J?.lore) ?? c.derived.loreScore;
+  d.readsFrom = J && jf(J.heat) !== null ? "Jev" : "heuristic";
+  const GAPS = ["attention_ahead", "balanced", "priced_in", "not_enough_evidence"];
+  d.gap = (J?.gap && (sortedProbs(J.gap, GAPS)[0]?.k || validChoice(J.gap, GAPS))) || (c.derived.gap > 0.25 ? "attention_ahead" : c.derived.gap < -0.25 ? "priced_in" : "balanced");
+  d.reboundP = J?.rebound ? num(J.rebound.noul) : null;
+  d.rebound = d.reboundP !== null ? d.reboundP >= 0.6 : c.derived.rebound;
+  d.setupP = J?.setup ? num(J.setup.noul) : null;
+  d.setup = d.setupP !== null ? d.setupP >= 0.6 : c.derived.setup;
+  if (c.x && !c.x.error) {
+    const BOTS = ["organic", "mixed", "bot_or_paid", "silence", "not_enough_evidence"];
+    d.bots = J?.bot_chatter ? (sortedProbs(J.bot_chatter, BOTS)[0]?.k || validChoice(J.bot_chatter, BOTS)) : null;
+    d.botsFrom = d.bots ? "Jev" : "heuristic";
+    if (!d.bots) {
+      const x = c.x.ca || {};
+      d.bots = !x.tweets ? "silence" : (x.tinyOrNewAuthorShare > 0.6 || x.duplicateTextShare > 0.5) ? "bot_or_paid" : (x.tinyOrNewAuthorShare > 0.3 || x.duplicateTextShare > 0.2) ? "mixed" : "organic";
+    }
+  }
+  c.d = d;
+}
+
+// ------------------------------------------------------------ X layer (via Worker)
+const xMem = LS.get("x", {});
+async function fetchX(coins) {
+  const w = workerBase();
+  if (!w || !settings.useX) return;
+  await pool(coins, 3, async (c) => {
+    const hit = xMem[c.key];
+    if (hit && Date.now() - hit.t < 3.6e6) { c.x = hit.d; return; }
+    const q = new URLSearchParams({ ca: c.address, sym: c.symbol || "" });
+    const h = officialHandle(c); if (h) q.set("handle", h);
+    try { const d = await rawFetch(`${w}/x?${q}`, {}, 25000); c.x = d; xMem[c.key] = { t: Date.now(), d }; }
+    catch (e) { c.x = { error: e.message }; }
+  });
+  for (const [k, v] of Object.entries(xMem)) if (Date.now() - v.t > 3.6e6) delete xMem[k];
+  LS.set("x", xMem);
+}
+
+// ------------------------------------------------------------ narrative radar
+const STOP = new Set("the and for with this that from your you are our coin token tokens official community meme memes sol solana pump fun bsc base eth chain launch new first just only real will its all get has have not but was can who what when why how one two big lil little super based inu moon ape".split(" "));
+const CJK = /[぀-ヿ㐀-鿿豈-﫿가-힯]+/g;
+function termsOf(c) {
+  const text = `${c.name} ${c.symbol} ${(c.story.description || "").slice(0, 240)}`;
+  const out = new Set();
+  for (const w of text.toLowerCase().normalize("NFKC").replace(CJK, " ").split(/[^\p{L}\p{N}]+/u)) {
+    if (w.length >= 3 && w.length <= 20 && !STOP.has(w) && !/^\d+$/.test(w)) out.add(w);
+  }
+  for (const run of text.match(CJK) || []) {
+    if (run.length <= 4) out.add(run);
+    for (let i = 0; i + 2 <= run.length; i++) out.add(run.slice(i, i + 2));
+  }
+  return out;
+}
+function detectMetas(coins) {
+  const count = new Map();
+  for (const c of coins) { c.terms = termsOf(c); for (const t of c.terms) count.set(t, (count.get(t) || 0) + 1); }
+  let metas = [...count.entries()].filter(([, n]) => n >= 3).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  // drop a CJK bigram when a longer run with the same coin count covers it
+  metas = metas.filter(([t, n]) => !metas.some(([u, m]) => u !== t && u.length > t.length && u.includes(t) && m === n));
+  return metas.slice(0, 18);
+}
+
+// ------------------------------------------------------------ scan memory
+const mem = {
+  seen: LS.get("seen", {}), outcomes: LS.get("outcomes", {}), muted: new Set(LS.get("muted", [])), stars: LS.get("stars", {}),
+  save() { LS.set("seen", this.seen); LS.set("outcomes", this.outcomes); LS.set("muted", [...this.muted]); LS.set("stars", this.stars); },
+};
+function recordSeen(coins) {
+  const now = Date.now();
+  for (const c of coins) {
+    const prev = mem.seen[c.key];
+    c.prevSeen = prev ? { ...prev } : null;
+    if (prev) {
+      if (now - prev.l > 5 * 60000) prev.n++;
+      prev.pm = prev.m; prev.pt = prev.t;
+      prev.l = now; prev.m = c.market.mcap; prev.t = c.crowd.trades1h;
+    } else mem.seen[c.key] = { f: now, l: now, n: 1, m: c.market.mcap, t: c.crowd.trades1h, s: c.symbol };
+  }
+  const keys = Object.keys(mem.seen);
+  for (const k of keys) if (now - mem.seen[k].l > 7 * 864e5) delete mem.seen[k];
+  const rest = Object.entries(mem.seen);
+  if (rest.length > 3000) rest.sort((a, b) => a[1].l - b[1].l).slice(0, rest.length - 3000).forEach(([k]) => delete mem.seen[k]);
+}
+function recordOutcomes(coins) {
+  const now = Date.now();
+  for (const c of coins) {
+    const o = mem.outcomes[c.key];
+    if (o) { o.mNow = c.market.mcap; o.tNow = now; if (c.d && gi(c.d.grade) < gi(o.best || "F")) o.best = c.d.grade; continue; }
+    if (!c.shown || !c.d || !["A", "B"].includes(c.d.grade)) continue;
+    mem.outcomes[c.key] = { s: c.symbol, c: c.chain, a: c.address, g: c.d.grade, best: c.d.grade, m0: c.market.mcap, t0: now, mNow: c.market.mcap, tNow: now, src: c.d.source };
+  }
+  const all = Object.entries(mem.outcomes);
+  if (all.length > 600) all.sort((a, b) => a[1].t0 - b[1].t0).slice(0, all.length - 600).forEach(([k]) => delete mem.outcomes[k]);
+}
+
+// ------------------------------------------------------------ app state
+const S = { live: [], met: [], shown: [], metas: [], meta: null, checked: null, tab: "results", busy: false, funnel: null, errors: [], scannedAt: null };
+
+function progress(frac, msg) {
+  const bar = $("#bar"); bar.classList.add("on"); bar.firstElementChild.style.width = Math.round(clamp(frac) * 100) + "%";
+  if (msg) setStatus(msg);
+}
+function doneProgress() { const bar = $("#bar"); bar.firstElementChild.style.width = "100%"; setTimeout(() => bar.classList.remove("on"), 400); }
+function setStatus(msg, errs = []) {
+  $("#status").innerHTML = esc(msg) + (errs.length ? ` <span class="err" title="${esc(errs.join("\n"))}">· ${errs.length} source issue${errs.length > 1 ? "s" : ""} (hover)</span>` : "");
+}
+
+// ------------------------------------------------------------ filters
+function currentFilters() {
+  const all = LS.get("filters", {});
+  return Object.assign({}, MODES[settings.mode].filters, all[settings.mode] || {});
+}
+function writeFilterInputs() {
+  const f = currentFilters();
+  $("#fMinMcap").value = f.minMcap ?? ""; $("#fMaxMcap").value = f.maxMcap ?? ""; $("#fMinLiq").value = f.minLiq ?? "";
+  $("#fMaxAge").value = f.maxAge ?? ""; $("#fMinTx").value = f.minTx ?? "";
+  $("#fChain").value = settings.chain; $("#strict").checked = settings.strict;
+  $("#strictWrap").classList.toggle("on", settings.strict);
+}
+function readFilterInputs() {
+  const v = (id) => { const x = $(id).value.trim(); return x === "" ? null : Number(x); };
+  const all = LS.get("filters", {});
+  all[settings.mode] = { minMcap: v("#fMinMcap"), maxMcap: v("#fMaxMcap"), minLiq: v("#fMinLiq"), maxAge: v("#fMaxAge"), minTx: v("#fMinTx") };
+  LS.set("filters", all);
+  settings.chain = $("#fChain").value; settings.strict = $("#strict").checked; saveSettings();
+  $("#strictWrap").classList.toggle("on", settings.strict);
+}
+function meetsFilters(c, f) {
+  const m = c.market;
+  if (mem.muted.has(c.key)) return false;
+  if (settings.chain !== "all") {
+    if (settings.chain === "evm") { if (["solana", "bsc", "robinhood", "tron"].includes(c.chain) || !CHAINS[c.chain]) return false; }
+    else if (c.chain !== settings.chain) return false;
+  }
+  if (f.minMcap !== null && (m.mcap ?? 0) < f.minMcap) return false;
+  if (f.maxMcap !== null && f.maxMcap > 0 && (m.mcap ?? Infinity) > f.maxMcap) return false;
+  if (f.minLiq !== null && f.minLiq > 0 && (m.liq ?? 0) < f.minLiq && !(onCurve(c) && m.liq === null)) return false;
+  if (f.maxAge !== null && f.maxAge > 0 && (c.ageH ?? Infinity) > f.maxAge) return false;
+  if (f.minTx !== null && (c.market.tx.h1.buys + c.market.tx.h1.sells) < f.minTx) return false;
+  return true;
+}
+function viewFilter(c) {
+  const q = $("#fSearch").value.trim().toLowerCase();
+  if (q && !(`${c.symbol} ${c.name} ${c.address}`.toLowerCase().includes(q))) return false;
+  if (S.meta && !(c.terms && c.terms.has(S.meta))) return false;
+  return true;
+}
+
+// ------------------------------------------------------------ pipeline
+async function scan() {
+  if (S.busy) return;
+  S.busy = true; $("#scanBtn").disabled = true; S.meta = null;
+  try {
+    const t0 = Date.now();
+    progress(0.02, "Discovering…");
+    const { seeds, errors: e1 } = await discover(settings.mode, (f, m) => progress(f * 0.35, m));
+    const { coins, errors: e2 } = await buildCoins(seeds, (f, m) => progress(0.35 + f * 0.15, m));
+    S.errors = [...e1, ...e2];
+    S.live = coins; S.fetched = seeds.size;
+    await processCoins((f, m) => progress(0.5 + f * 0.5, m));
+    S.scannedAt = Date.now();
+    const secs = ((Date.now() - t0) / 1000).toFixed(0);
+    setStatus(`Scanned ${new Date().toLocaleTimeString()} in ${secs}s · ${jevLine()}`, S.errors);
+  } catch (e) {
+    console.error(e); setStatus("Scan failed: " + e.message, S.errors);
+  } finally { S.busy = false; $("#scanBtn").disabled = false; doneProgress(); }
+}
+function jevLine() {
+  if (!workerBase()) return "Jev offline (no Worker set in Settings), so grades are rules-only";
+  if (!settings.useJev) return "Jev turned off, so grades are rules-only";
+  return jevStatus.msg ? jevStatus.msg : "Jev is the decision engine";
+}
+
+async function processCoins(prog = () => {}) {
+  const f = currentFilters();
+  const met = S.live.filter((c) => meetsFilters(c, f));
+  const dupes = duplicateLosers(S.live);
+
+  // Security: rank by liquidity, check the deepest first (per-scan caps keep APIs happy).
+  const sol = met.filter((c) => CHAINS[c.chain]?.checker === "rugcheck").sort((a, b) => (b.market.liq || 0) - (a.market.liq || 0));
+  const evm = met.filter((c) => CHAINS[c.chain]?.checker === "goplus").sort((a, b) => (b.market.liq || 0) - (a.market.liq || 0));
+  const none = met.filter((c) => !CHAINS[c.chain]?.checker);
+  let done = 0; const total = Math.min(sol.length, 90) + Math.min(evm.length, 60) || 1;
+  const step = () => prog((++done / total) * 0.45, `Security checks… ${done}/${total}`);
+  await Promise.all([
+    pool(sol.slice(0, 90), 3, async (c) => { c.sec = await securityFor(c); step(); await sleep(150); }),
+    pool(evm.slice(0, 60), 2, async (c) => { c.sec = await securityFor(c); step(); await sleep(350); }),
+  ]);
+  for (const c of [...sol.slice(90), ...evm.slice(60)]) if (!c.sec) c.sec = { checker: CHAINS[c.chain].checker, ok: false, reason: "not checked this scan (per-scan limit reached)" };
+  for (const c of none) c.sec = { checker: "none", ok: false, reason: `No security checker covers ${c.chain}` };
+
+  prog(0.5, "Reading bonding curves…");
+  await readCurves(met.filter((c) => !c.curve));
+
+  for (const c of met) { c.derived = {}; prepareEvidence(c); }
+  computeGaps(met);
+  for (const c of met) c.caps = capsFor(c, dupes);
+
+  const cands = met.filter((c) => c.rv.v !== "FAIL").sort((a, b) => b.pillars.total - a.pillars.total).slice(0, settings.jevMax);
+  if (settings.useX && workerBase() && settings.xMax > 0) {
+    prog(0.55, "X layer…");
+    await fetchX(cands.slice(0, settings.xMax));
+    computeGaps(met);
+  }
+  prog(0.6, "Jev deciding…");
+  for (const c of met) { c.jev = null; c.jevError = null; }
+  await askJev(cands, (fr, m) => prog(0.6 + fr * 0.38, m));
+  const candSet = new Set(cands.map((c) => c.key));
+  for (const c of met) {
+    if (!candSet.has(c.key) && !c.jevError) c.jevError = c.rv.v === "FAIL" ? "not sent: rules found a security FAIL" : `not sent: outside the top ${settings.jevMax} by evidence`;
+    decide(c);
+  }
+  S.met = met;
+  S.metas = detectMetas(S.live);
+  recordSeen(met);
+  finalize();
+}
+
+function finalize() {
+  const passed = S.met.filter((c) => c.d.verdict !== "FAIL");
+  const graded = passed.filter((c) => !settings.strict || ["A", "B"].includes(c.d.grade));
+  S.shown = graded.filter(viewFilter).sort((a, b) => gi(a.d.grade) - gi(b.d.grade) || b.pillars.total - a.pillars.total);
+  for (const c of S.live) c.shown = false;
+  for (const c of S.shown) c.shown = true;
+  recordOutcomes(S.met);
+  mem.save();
+  S.funnel = { fetched: S.fetched ?? S.live.length, live: S.live.length, met: S.met.length, passed: passed.length, shown: S.shown.length };
+  render();
+}
+
+// ------------------------------------------------------------ refresh
+async function refreshShown() {
+  if (S.busy) return;
+  const targets = [...S.shown]; if (S.checked) targets.push(S.checked);
+  if (!targets.length) { toast("Nothing on screen to refresh"); return; }
+  S.busy = true; $("#refreshBtn").disabled = true;
+  try {
+    progress(0.1, `Refreshing ${targets.length} coins…`);
+    const byChain = new Map();
+    for (const c of targets) (byChain.get(c.chain) || byChain.set(c.chain, []).get(c.chain)).push(c);
+    const errs = [];
+    for (const [chain, list] of byChain) {
+      const pairs = await fetchPairs(chain, list.map((c) => c.address), errs);
+      for (const c of list) {
+        const k = chain === "solana" || chain === "tron" ? c.address : c.address.toLowerCase();
+        const bp = bestPair(pairs.get(k));
+        if (!bp) { if (!errs.length) c.gone = true; continue; }
+        const fresh = coinFromPair({ key: c.key, chain, address: c.address, sources: c.sources, profile: c.story.profile ? { description: c.story.description, links: c.story.links, cto: c.story.cto } : null }, bp, pairs.get(k).length);
+        c.gone = false; c.market = fresh.market; c.ageH = fresh.ageH; c.dexId = fresh.dexId; c.pairAddress = fresh.pairAddress;
+        c.curve = null;
+      }
+    }
+    progress(0.4, "Re-reading curves…");
+    await readCurves(targets.filter((c) => !c.gone));
+    const dupes = duplicateLosers(S.live.length ? S.live : targets);
+    for (const c of targets) { prepareEvidence(c); c.caps = capsFor(c, dupes); }
+    computeGaps(S.met.length ? S.met : targets);
+    for (const c of targets) { c.jev = null; c.jevError = c.gone ? "pair gone, not re-sent" : c.rv.v === "FAIL" ? "not sent: rules found a security FAIL" : null; }
+    await askJev(targets.filter((c) => !c.gone && c.rv.v !== "FAIL"), (f, m) => progress(0.5 + f * 0.45, m));
+    for (const c of targets) decide(c);
+    finalize();
+    const gone = targets.filter((c) => c.gone).length;
+    setStatus(`Refreshed ${new Date().toLocaleTimeString()}${gone ? ` · ${gone} pair${gone > 1 ? "s" : ""} gone` : ""} · ${jevLine()}`, errs);
+  } catch (e) { setStatus("Refresh failed: " + e.message); }
+  finally { S.busy = false; $("#refreshBtn").disabled = false; doneProgress(); }
+}
+
+// ------------------------------------------------------------ single CA check
+function detectChain(ca) {
+  if (/^0x[0-9a-fA-F]{40}$/.test(ca)) return "evm";
+  if (/^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(ca)) return "tron";
+  if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(ca)) return "solana";
+  return null;
+}
+async function checkCA(ca) {
+  ca = (ca || "").trim();
+  const kind = detectChain(ca);
+  if (!kind) { toast("That doesn't look like a contract address"); return; }
+  if (S.busy) { toast("A scan is running. Try again in a moment."); return; }
+  S.busy = true; $("#caBtn").disabled = true;
+  try {
+    progress(0.1, `Checking ${short(ca)}…`);
+    let pairs = [], chain = kind === "evm" ? null : kind;
+    if (kind === "evm") {
+      const d = await getJSON(`${DS}/latest/dex/tokens/${ca}`);
+      pairs = (d.pairs || []).filter((p) => p.baseToken?.address?.toLowerCase() === ca.toLowerCase());
+      const best = bestPair(pairs); chain = best?.chainId || null;
+      pairs = pairs.filter((p) => p.chainId === chain);
+    } else {
+      const arr = await getJSON(`${DS}/tokens/v1/${chain}/${ca}`);
+      pairs = (Array.isArray(arr) ? arr : []).filter((p) => p.baseToken?.address === ca);
+    }
+    const key = chain ? chain + ":" + (chain === "solana" || chain === "tron" ? ca : ca.toLowerCase()) : null;
+    let coin;
+    const seed = { key, chain, address: ca, sources: new Set(["manual"]) };
+    if (pairs.length) coin = coinFromPair(seed, bestPair(pairs), pairs.length);
+    else if (chain === "solana") {
+      try {
+        const g = await gtGet(`/networks/solana/tokens/${ca}/pools?include=base_token&page=1`);
+        const p = (g.data || [])[0];
+        if (p) { seed.gt = { pool: p.attributes, token: (g.included || [])[0]?.attributes || {}, dexId: p.relationships?.dex?.data?.id }; coin = coinFromGT(seed); }
+      } catch { /* fall through */ }
+    }
+    if (!coin) { setStatus(`No live pair found for ${short(ca)}${chain ? " on " + chain : ""}. It may be unlaunched or the pair is gone.`); return; }
+    progress(0.3, "Security check…");
+    coin.sec = await securityFor(coin);
+    await readCurves([coin]);
+    coin.derived = {}; prepareEvidence(coin);
+    const peers = S.met.filter((c) => c.key !== coin.key);
+    computeGaps([...peers, coin]);
+    if (peers.length) computeGaps(peers);
+    coin.caps = capsFor(coin, duplicateLosers([...S.live.filter((c) => c.key !== coin.key), coin]));
+    coin.terms = termsOf(coin);
+    if (settings.useX) await fetchX([coin]);
+    progress(0.6, "Jev deciding…");
+    coin.jev = null; coin.jevError = null;
+    await askJev([coin], () => {});
+    decide(coin);
+    coin.checked = true; coin.shown = true;
+    S.checked = coin;
+    recordSeen([coin]); recordOutcomes([coin]); mem.save();
+    render();
+    setStatus(`Checked ${coin.symbol} on ${coin.chain} · ${jevLine()}`);
+  } catch (e) { setStatus("Check failed: " + e.message); }
+  finally { S.busy = false; $("#caBtn").disabled = false; doneProgress(); }
+}
+
+// ------------------------------------------------------------ outcome log update
+async function updateOutcomes() {
+  const entries = Object.entries(mem.outcomes);
+  if (!entries.length) return;
+  const byChain = new Map();
+  for (const [k, o] of entries) (byChain.get(o.c) || byChain.set(o.c, []).get(o.c)).push([k, o]);
+  setStatus("Updating outcome log…");
+  const errs = [];
+  for (const [chain, list] of byChain) {
+    const pairs = await fetchPairs(chain, list.map(([, o]) => o.a), errs);
+    for (const [, o] of list) {
+      const k = chain === "solana" || chain === "tron" ? o.a : o.a.toLowerCase();
+      const bp = bestPair(pairs.get(k));
+      if (bp) { o.mNow = num(bp.marketCap) ?? num(bp.fdv); o.gone = false; } else if (!errs.length) { o.gone = true; o.mNow = null; }
+      o.tNow = Date.now();
+    }
+  }
+  mem.save(); renderLog();
+  setStatus(`Outcome log updated ${new Date().toLocaleTimeString()}`, errs);
+}
+
+// ------------------------------------------------------------ render
+const GRADE_COLORS = { A: "var(--gA)", B: "var(--gB)", C: "var(--gC)", D: "var(--gD)", F: "var(--gF)" };
+const HEAT_L = ["cold", "cool", "warm", "hot", "on fire"];
+const TREND_L = ["dead", "thin", "steady", "growing", "surging"];
+const LORE_L = ["none", "minimal", "basic", "solid", "distinctive"];
+const GAP_L = { attention_ahead: ["attention ahead", ""], balanced: ["balanced", ""], priced_in: ["priced in", "a"], not_enough_evidence: ["gap: no data", ""] };
+const lvl = (f, L) => f === null || f === undefined ? "?" : L[Math.min(L.length - 1, Math.round(f * (L.length - 1)))];
+
+function render() {
+  renderModes(); renderFunnel(); renderRadar(); renderChecked(); renderList(); renderWatch(); renderLog();
+  $("#nResults").textContent = S.shown.length || "";
+  $("#nWatch").textContent = Object.keys(mem.stars).length || "";
+  $("#nLog").textContent = Object.keys(mem.outcomes).length || "";
+  lazyBubblemaps();
+}
+function renderModes() {
+  $("#modes").innerHTML = Object.entries(MODES).map(([k, m]) =>
+    `<button class="chip ${settings.mode === k ? "on" : ""}" data-mode="${k}">${esc(m.label)}${m.hint ? ` <small>${esc(m.hint)}</small>` : ""}</button>`).join("");
+}
+function renderFunnel() {
+  const f = S.funnel;
+  if (!f) { $("#funnel").innerHTML = ""; return; }
+  const step = (n, l) => `<span><b>${n}</b> ${l}</span>`;
+  $("#funnel").innerHTML = [step(f.fetched, "fetched"), step(f.live, "live pairs"), step(f.met, "met filters"), `<span title="Security verdict is not FAIL. UNKNOWN coins count here but are capped at C.">${step(f.passed, "passed")}</span>`, step(f.shown, "shown")].join('<span class="arr">→</span>');
+}
+function renderRadar() {
+  if (!S.metas.length) { $("#radar").innerHTML = ""; return; }
+  $("#radar").innerHTML = `<span class="lbl" title="Terms shared by 3+ coins in this scan. Heuristic.">Narrative radar</span>` +
+    S.metas.map(([t, n]) => `<button class="chip ${S.meta === t ? "on" : ""}" data-meta="${esc(t)}">${esc(t)} <small>${n}</small></button>`).join("") +
+    (S.meta ? `<button class="chip" data-meta="">clear ✕</button>` : "");
+}
+function renderChecked() {
+  const c = S.checked;
+  $("#checked").innerHTML = c ? `<div class="section-h">Checked address (shown regardless of filters and strict mode)</div><div class="list" style="margin-bottom:14px">${card(c, { checked: true })}</div>` : "";
+}
+function renderList() {
+  if (!S.funnel) { $("#list").innerHTML = `<div class="empty"><h3>Ready when you are</h3>Pick a mode and press Scan. Nothing here is a buy signal.</div>`; return; }
+  if (!S.shown.length) {
+    const why = settings.strict ? "Strict mode only shows A and B grades, and no coin earned one this scan." : "No coin passed the filters and security checks.";
+    $("#list").innerHTML = `<div class="empty"><h3>Nothing met the bar.</h3>${esc(why)} That's the screener doing its job: most launches don't deserve your attention.</div>`;
+    return;
+  }
+  $("#list").innerHTML = S.shown.map((c) => card(c)).join("");
+}
+function renderWatch() {
+  const stars = Object.entries(mem.stars);
+  if (!stars.length) { $("#watchList").innerHTML = `<div class="empty">Star a coin to keep it here.</div>`; return; }
+  const byKey = new Map([...S.live, ...(S.checked ? [S.checked] : [])].map((c) => [c.key, c]));
+  $("#watchList").innerHTML = stars.sort((a, b) => b[1].t - a[1].t).map(([k, s]) => {
+    const c = byKey.get(k);
+    if (c && c.d) return card(c);
+    return `<div class="card"><div class="chead"><div class="ctitle"><div class="sym">$${esc(s.s)}</div><div class="nm">${esc(s.c)} · starred ${new Date(s.t).toLocaleDateString()}</div></div>
+      <div class="actions"><button class="btn small" data-act="check" data-ca="${esc(s.a)}">Check now</button><button class="iconbtn on" data-act="star" data-key="${esc(k)}" title="Unstar">★</button></div></div>
+      <div class="ca" data-act="copy" data-ca="${esc(s.a)}">${esc(s.a)}</div></div>`;
+  }).join("");
+}
+function renderLog() {
+  const rows = Object.entries(mem.outcomes).sort((a, b) => b[1].t0 - a[1].t0);
+  const el = $("#tab-log");
+  if (!rows.length) { el.innerHTML = `<div class="empty">Every A or B coin the screener shows is logged here with its market cap then and now. It's the honest scoreboard, and it starts empty.</div>`; return; }
+  const withNow = rows.filter(([, o]) => o.m0 && (o.mNow || o.gone));
+  const mult = withNow.map(([, o]) => (o.gone ? 0 : o.mNow / o.m0));
+  const med = mult.length ? [...mult].sort((a, b) => a - b)[mult.length >> 1] : null;
+  const up = mult.filter((x) => x >= 1).length, x2 = mult.filter((x) => x >= 2).length, half = mult.filter((x) => x <= 0.5).length;
+  const gone = rows.filter(([, o]) => o.gone).length;
+  el.innerHTML = `<div class="score-sum"><span><b>${rows.length}</b> logged</span><span>median <b>${med ? med.toFixed(2) + "×" : "–"}</b></span><span><b>${up}</b> up</span><span><b>${x2}</b> ≥2×</span><span><b>${half}</b> ≤0.5×</span><span><b>${gone}</b> pair gone</span>
+    <button class="btn small" id="logUpdate">Update now</button></div>
+    <p class="np" style="margin:0 0 8px">Market cap when first shown vs latest. Past grades, not predictions. Survivorship-free: dead pairs stay in the log and count as 0× in the summary.</p>
+    <div class="tablewrap"><table class="log"><thead><tr><th>Coin</th><th>Grade</th><th>Shown</th><th class="num">Mcap then</th><th class="num">Mcap now</th><th class="num">×</th></tr></thead><tbody>
+    ${rows.map(([, o]) => {
+      const m = o.m0 && o.mNow ? o.mNow / o.m0 : null;
+      return `<tr><td><a href="https://dexscreener.com/${esc(o.c)}/${esc(o.a)}" target="_blank" rel="noopener">$${esc(o.s)}</a> <span class="tag">${esc(CHAINS[o.c]?.label || o.c)}</span></td>
+        <td><span class="tag" style="color:${GRADE_COLORS[o.g]}">${esc(o.g)}</span>${o.src === "rules" ? ' <span class="tag" title="graded without Jev">rules</span>' : ""}</td>
+        <td>${new Date(o.t0).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</td>
+        <td class="num">${money(o.m0)}</td><td class="num">${o.gone ? '<span class="tag r">PAIR GONE</span>' : money(o.mNow)}</td>
+        <td class="num ${m === null ? "" : m >= 1 ? "up" : "dn"}">${m === null ? "–" : m.toFixed(2) + "×"}</td></tr>`;
+    }).join("")}</tbody></table></div>`;
+}
+
+function probBar(probs) {
+  if (!probs || !probs.length) return "";
+  const order = [...probs].sort((a, b) => gi(a.k) - gi(b.k));
+  return `<div class="probs">${order.map((x) => `<i style="width:${(x.p * 100).toFixed(1)}%;background:${GRADE_COLORS[x.k] || "var(--dim)"}" title="${esc(x.k)} ${Math.round(x.p * 100)}%"></i>`).join("")}</div>`;
+}
+
+function card(c, opt = {}) {
+  const d = c.d || {}, s = c.sec || {}, h = s.holders || {}, m = c.market;
+  const starred = Boolean(mem.stars[c.key]);
+  const chainL = CHAINS[c.chain]?.label || c.chain;
+  const img = safeUrl(c.story.image);
+  const seen = c.prevSeen || mem.seen[c.key];
+  const tags = [];
+  if (c.gone) tags.push(`<span class="tag r">PAIR GONE</span>`);
+  tags.push(`<span class="tag b" title="Phase: ${d.source === "jev" ? "Jev judgment" : "code heuristic"}, not a prediction${d.phaseTie ? ". * = close call, the rules read broke the tie" : ""}">${esc(d.phase || "?")}${d.phaseTie ? "*" : ""}</span>`);
+  tags.push(`<span class="tag" title="Price momentum (${d.readsFrom}), not a prediction">heat: ${lvl(d.heat, HEAT_L)}</span>`);
+  tags.push(`<span class="tag" title="Crowd: trade count, acceleration, avg trade size (${d.readsFrom})">trend: ${lvl(d.trend, TREND_L)}</span>`);
+  tags.push(`<span class="tag" title="Story, socials, branding depth (${d.readsFrom})">lore: ${lvl(d.lore, LORE_L)}</span>`);
+  if (d.gap && GAP_L[d.gap]) tags.push(`<span class="tag ${GAP_L[d.gap][1]}" title="Attention minus priced-in (scan percentile ${c.derived.gap > 0 ? "+" : ""}${c.derived.gap}). Not a prediction.">${GAP_L[d.gap][0]}</span>`);
+  if (d.rebound) tags.push(`<span class="tag v" title="Drawdown then recovery with buyers returning${d.reboundP !== null ? ` (Jev ${Math.round(d.reboundP * 100)}%)` : " (heuristic)"}. A shape, not a prediction.">rebound shape</span>`);
+  if (d.setup) tags.push(`<span class="tag v" title="Tight range with rising trades and buy share${d.setupP !== null ? ` (Jev ${Math.round(d.setupP * 100)}%)` : " (heuristic)"}. A shape, not a prediction.">setup</span>`);
+  if (d.bots) tags.push(`<span class="tag ${d.bots === "organic" ? "g" : d.bots === "bot_or_paid" ? "r" : d.bots === "silence" ? "a" : ""}" title="X chatter (${d.botsFrom || "Jev"})">X: ${esc(d.bots.replace(/_/g, " "))}</span>`);
+  if (c.curve?.validated) tags.push(`<span class="tag ${c.curve.graduated ? "g" : ""}" title="Read from the pump.fun bonding-curve account on-chain">${c.curve.graduated ? "graduated" : `curve ${c.curve.pctSold.toFixed(0)}% · ${c.curve.solRaised.toFixed(1)} SOL`}</span>`);
+  if (seen && seen.n > 1) tags.push(`<span class="tag" title="Seen in ${seen.n} scans since ${new Date(seen.f).toLocaleString()}">seen ${seen.n}× · ${age((Date.now() - seen.f) / 3.6e6)}</span>`);
+  if (c.prevSeen?.m && m.mcap) { const dm = (m.mcap / c.prevSeen.m - 1) * 100; if (Math.abs(dm) >= 1) tags.push(`<span class="tag ${dm > 0 ? "g" : "r"}" title="Market cap change since the previous scan">${pct(dm)} since last scan</span>`); }
+
+  // Decision box
+  let decide = "";
+  if (d.source === "jev") {
+    const top = (d.gradeProbs || []).slice(0, 3).map((x) => `${x.k} ${Math.round(x.p * 100)}%`).join(" · ");
+    const vp = d.verdictProbs?.find((x) => x.k === d.verdict);
+    decide = `<div class="decide"><b>Jev decision</b> · ${esc(top)}${probBar(d.gradeProbs)}
+      ${d.notes.length ? `<div>${esc(d.notes.join(" · "))}</div>` : ""}
+      <div>Verdict ${esc(d.verdict)}${vp ? ` (Jev ${Math.round(vp.p * 100)}%)` : ""}${d.verdictNote ? ` · ${esc(d.verdictNote)}` : ""} · rules evidence ${c.pillars.total}/100 (${c.ruleGrade})</div></div>`;
+  } else {
+    decide = `<div class="decide"><b>Rules-only</b> · evidence ${c.pillars.total}/100 → ${c.ruleGrade}${d.notes.length ? `<div>${esc(d.notes.join(" · "))}</div>` : ""}${d.verdictNote ? `<div>Verdict: ${esc(d.verdictNote)}</div>` : ""}</div>`;
+  }
+
+  const P = c.pillars;
+  const pill = (label, v, max) => `<span>${label}</span><div class="pbar"><i style="width:${(v / max * 100).toFixed(0)}%"></i></div><span class="pv">${v}/${max}</span>`;
+  const txd = c.prevSeen?.t !== undefined && c.prevSeen?.t !== null ? c.crowd.trades1h - c.prevSeen.t : null;
+
+  const risks = s.ok ? s.risks : [];
+  const secBody = s.ok ? `
+    <div class="kv"><span>Checker</span><span>${esc(s.checker)}${s.partial ? " (summary only)" : ""}</span>
+    ${s.scoreNorm !== null && s.scoreNorm !== undefined ? `<span>Risk score</span><span>${s.scoreNorm}/100 (lower is safer)</span>` : ""}
+    ${s.buyTax !== null ? `<span>Taxes</span><span>buy ${s.buyTax.toFixed(1)}% · sell ${(s.sellTax ?? 0).toFixed(1)}%</span>` : ""}
+    <span>Authorities</span><span>${s.checker === "rugcheck" ? (s.partial ? "unknown (summary only)" : `mint ${s.mintAuthority ? "ACTIVE" : "off"} · freeze ${s.freezeAuthority ? "ACTIVE" : "off"}`) : `mintable ${s.mintable ? "yes" : "no"} · pausable ${s.pausable ? "yes" : "no"} · verified ${s.openSource ? "yes" : "no"}`}</span>
+    <span>LP locked</span><span>${lpLockedPct(c) === null ? "unknown" : lpLockedPct(c).toFixed(0) + "%"}${onCurve(c) && c.curve?.validated ? " (bonding curve)" : ""}</span></div>
+    ${risks.length ? `<ul>${risks.map((r) => `<li class="${r.level === "danger" ? "dn" : ""}">${esc(r.name)}${r.value ? ` (${esc(r.value)})` : ""}</li>`).join("")}</ul>` : "<div>No risks reported by the checker.</div>"}` :
+    `<div>${esc(s.reason || "No security data")}. Verdict stays UNKNOWN, never a pass.</div>`;
+  const holdBody = s.ok ? `<div class="kv">
+    <span>Holders</span><span>${h.total ?? "?"}</span>
+    <span>Top holder</span><span>${h.top1 === null || h.top1 === undefined ? "?" : h.top1.toFixed(1) + "%"}</span>
+    <span>Top 10</span><span>${h.top10 === null || h.top10 === undefined ? "?" : h.top10.toFixed(1) + "%"}</span>
+    ${h.insiderPct !== null && h.insiderPct !== undefined ? `<span>Insiders</span><span>${h.insiderPct.toFixed(1)}%${h.insiderNetworks ? ` · ${h.insiderNetworks} network${h.insiderNetworks > 1 ? "s" : ""}` : ""}${h.graphInsiders ? ` · ${h.graphInsiders} graph-detected` : ""}</span>` : ""}
+    <span>Creator holds</span><span>${h.creatorPct === null || h.creatorPct === undefined ? "?" : h.creatorPct.toFixed(2) + "%"}</span>
+    <span>Creator's prior launches</span><span>${h.priorLaunches ?? "unknown"}</span></div>` : "<div>Unavailable.</div>";
+  const xBody = c.x && !c.x.error ? `<div class="kv">
+    <span>Tweets with CA</span><span>${c.x.ca?.tweets ?? "?"}${c.x.ca?.moreAvailable ? "+" : ""} from ${c.x.ca?.uniqueAuthors ?? "?"} accounts${c.x.ca?.newestMinutesAgo !== null && c.x.ca?.newestMinutesAgo !== undefined ? ` · newest ${age(c.x.ca.newestMinutesAgo / 60)} ago` : ""}</span>
+    <span>Tiny/new accounts</span><span>${c.x.ca?.tinyOrNewAuthorShare === null || c.x.ca?.tinyOrNewAuthorShare === undefined ? "–" : Math.round(c.x.ca.tinyOrNewAuthorShare * 100) + "%"} · duplicate text ${c.x.ca?.duplicateTextShare === null || c.x.ca?.duplicateTextShare === undefined ? "–" : Math.round(c.x.ca.duplicateTextShare * 100) + "%"}</span>
+    ${c.x.ticker ? `<span>$${esc(c.symbol)} breadth</span><span>${c.x.ticker.uniqueAuthors ?? "?"} accounts in latest ${c.x.ticker.tweets ?? "?"} tweets</span>` : ""}
+    ${c.x.official ? `<span>Official page</span><span>@${esc(c.x.official.handle)} · ${c.x.official.error ? esc(c.x.official.error) : `${(c.x.official.followers ?? 0).toLocaleString()} followers`}</span>` : ""}</div>` : "";
+
+  const bm = bubblemapsUrl(c);
+  const handle = officialHandle(c);
+  const links = [
+    `<a href="${esc(safeUrl(c.pairUrl) || `https://dexscreener.com/${c.chain}/${c.address}`)}" target="_blank" rel="noopener">${c.source === "geckoterminal" ? "GeckoTerminal" : "DexScreener"}</a>`,
+    bm ? `<a href="${esc(bm)}" target="_blank" rel="noopener" data-bm="${esc(c.key)}" title="Wallet-cluster map">Bubblemaps <span class="bmst">${CHAINS[c.chain]?.bmNoAvail ? "?" : "…"}</span></a>` : "",
+    s.url ? `<a href="${esc(s.url)}" target="_blank" rel="noopener">${s.checker === "rugcheck" ? "RugCheck" : "GoPlus"}</a>` : "",
+    c.chain === "solana" && /pump/.test(c.dexId || "") ? `<a href="https://pump.fun/coin/${esc(c.address)}" target="_blank" rel="noopener">pump.fun</a>` : "",
+    handle ? `<a href="https://x.com/${esc(handle)}" target="_blank" rel="noopener">@${esc(handle)}</a>` : "",
+  ].filter(Boolean).join("");
+
+  return `<article class="card ${opt.checked ? "checked" : ""} ${c.gone ? "gone" : ""}" data-key="${esc(c.key)}">
+    <div class="chead">
+      ${img ? `<img class="icon" src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.visibility='hidden'">` : `<div class="icon"></div>`}
+      <div class="ctitle"><div class="sym">$${esc(c.symbol)}</div><div class="nm">${esc(c.name)} · ${esc(chainL)} · ${age(c.ageH)} · ${esc(LAUNCHPAD_NAME[c.dexId] || c.dexId || "")}</div></div>
+      <div class="pills"><span class="verdict v-${esc(d.verdict)}">${esc(d.verdict)}</span><span class="grade g${esc(d.grade)}" title="Evidence grade. Not a prediction.">${esc(d.grade)}</span></div>
+    </div>
+    ${decide}
+    ${c.caps.length ? `<div class="caps">Capped at C: ${esc(c.caps.join("; "))}</div>` : ""}
+    <div class="metrics">
+      <div class="m"><div class="k">Mcap</div><div class="val">${money(m.mcap)}</div></div>
+      <div class="m"><div class="k">Liquidity${onCurve(c) ? " (curve)" : ""}</div><div class="val">${money(m.liq)}</div></div>
+      <div class="m"><div class="k">Vol 24h</div><div class="val">${money(m.vol.h24)}</div></div>
+      <div class="m"><div class="k">Trades 1h</div><div class="val">${c.crowd.trades1h}${txd ? ` <span class="${txd > 0 ? "up" : "dn"}">${txd > 0 ? "+" : ""}${txd}</span>` : ""}</div></div>
+    </div>
+    <div class="chg"><span>${price(m.price)}</span>${W.map((w) => `<span>${w} <span class="${(m.chg[w] ?? 0) >= 0 ? "up" : "dn"}">${pct(m.chg[w])}</span></span>`).join("")}<span>vol 1h ${money(m.vol.h1)}</span><span>buys ${c.crowd.buyShare1h === null ? "–" : Math.round(c.crowd.buyShare1h * 100) + "%"}</span></div>
+    <div class="tags">${tags.join("")}</div>
+    <div class="pillars" title="Code-computed evidence points (the rules side that Jev sees and that breaks ties)">
+      ${pill("Security", P.security, 35)}${pill("Holders", P.holders, 25)}${pill("Exit depth", P.exitDepth, 15)}${pill("Structure", P.structure, 5)}${pill((c.ageH ?? 99) < 24 ? "Activity (story+vol)" : "Activity (trend+vol)", P.activity, 20)}
+    </div>
+    <details><summary>Security · ${esc(d.verdict)}</summary>${secBody}</details>
+    <details><summary>Holders & creator</summary>${holdBody}</details>
+    ${xBody ? `<details><summary>X / Twitter</summary>${xBody}</details>` : ""}
+    <div class="links">${links}
+      <div class="actions">
+        ${opt.checked ? `<button class="btn small" data-act="recheck" data-ca="${esc(c.address)}">Recheck</button><button class="iconbtn" data-act="close" title="Close">✕</button>` : ""}
+        <button class="iconbtn ${starred ? "on" : ""}" data-act="star" data-key="${esc(c.key)}" title="${starred ? "Unstar" : "Star / watchlist"}">${starred ? "★" : "☆"}</button>
+        <button class="iconbtn" data-act="mute" data-key="${esc(c.key)}" title="Mute: never show again">⊘</button>
+      </div>
+    </div>
+    <div class="ca" data-act="copy" data-ca="${esc(c.address)}" title="Copy address">${esc(c.address)}</div>
+    <div class="np">Evidence ranking · not a prediction · not a buy rating</div>
+  </article>`;
+}
+
+async function lazyBubblemaps() {
+  const els = $$("a[data-bm]").slice(0, 30);
+  const all = new Map([...S.live, ...(S.checked ? [S.checked] : [])].map((c) => [c.key, c]));
+  await pool(els, 3, async (el) => {
+    const c = all.get(el.dataset.bm); if (!c) return;
+    const v = await bubblemapsAvailable(c);
+    const st = el.querySelector(".bmst"); if (!st) return;
+    st.textContent = v === true ? "✓" : v === false ? "(no map yet)" : "?";
+    el.title = v === true ? "Wallet-cluster map available" : v === false ? "Bubblemaps hasn't mapped this token yet" : "Availability unknown";
+  });
+}
+
+// ------------------------------------------------------------ controls
+function bind() {
+  $("#scanBtn").onclick = scan;
+  $("#refreshBtn").onclick = refreshShown;
+  $("#modes").onclick = (e) => {
+    const b = e.target.closest("[data-mode]"); if (!b) return;
+    if (S.busy) { toast("A scan is running. Try again in a moment."); return; }
+    settings.mode = b.dataset.mode; saveSettings(); writeFilterInputs(); renderModes(); scan();
+  };
+  let deb;
+  const onFilter = () => { readFilterInputs(); clearTimeout(deb); deb = setTimeout(() => { if (S.live.length && !S.busy) { S.busy = true; processCoins().finally(() => { S.busy = false; }); } }, 500); };
+  for (const id of ["#fMinMcap", "#fMaxMcap", "#fMinLiq", "#fMaxAge", "#fMinTx"]) $(id).addEventListener("input", onFilter);
+  $("#fChain").onchange = onFilter;
+  $("#strict").onchange = () => { readFilterInputs(); if (S.met.length) finalize(); else render(); };
+  $("#fSearch").addEventListener("input", () => { if (S.met.length) finalize(); });
+  $("#fReset").onclick = () => { const all = LS.get("filters", {}); delete all[settings.mode]; LS.set("filters", all); writeFilterInputs(); onFilter(); };
+  $("#fToggle").onclick = () => $("#filters").classList.toggle("open");
+  $("#radar").onclick = (e) => { const b = e.target.closest("[data-meta]"); if (!b) return; S.meta = b.dataset.meta && S.meta !== b.dataset.meta ? b.dataset.meta : null; finalize(); };
+  $("#caBtn").onclick = () => checkCA($("#caInput").value);
+  $("#caInput").addEventListener("keydown", (e) => { if (e.key === "Enter") checkCA($("#caInput").value); });
+  $$(".tab").forEach((t) => t.onclick = () => {
+    S.tab = t.dataset.tab; $$(".tab").forEach((x) => x.classList.toggle("on", x === t));
+    for (const k of ["results", "watch", "log"]) $("#tab-" + k).hidden = k !== S.tab;
+  });
+  document.body.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-act]"); if (!b) return;
+    const act = b.dataset.act;
+    if (act === "copy") { navigator.clipboard?.writeText(b.dataset.ca).then(() => toast("Address copied"), () => toast("Copy blocked")); }
+    else if (act === "star") {
+      const k = b.dataset.key;
+      if (mem.stars[k]) delete mem.stars[k];
+      else { const c = [...S.live, S.checked].find((x) => x && x.key === k); if (c) mem.stars[k] = { s: c.symbol, c: c.chain, a: c.address, t: Date.now() }; }
+      mem.save(); render();
+    }
+    else if (act === "mute") {
+      mem.muted.add(b.dataset.key); mem.save();
+      if (S.checked?.key === b.dataset.key) S.checked = null;
+      S.met = S.met.filter((c) => c.key !== b.dataset.key); finalize(); toast("Muted. Unmute all in Settings.");
+    }
+    else if (act === "recheck" || act === "check") { $("#caInput").value = b.dataset.ca; checkCA(b.dataset.ca); }
+    else if (act === "close") { S.checked = null; render(); }
+  });
+  document.addEventListener("click", (e) => { if (e.target.id === "logUpdate") updateOutcomes(); });
+
+  // settings dialog
+  const dlg = $("#settings");
+  $("#settingsBtn").onclick = () => {
+    $("#sWorker").value = settings.workerUrl; $("#sJev").checked = settings.useJev; $("#sX").checked = settings.useX;
+    $("#sJevMax").value = settings.jevMax; $("#sXMax").value = settings.xMax; $("#sRpc").value = settings.rpc; $("#sHealth").textContent = "";
+    dlg.showModal();
+  };
+  $("#sTest").onclick = async () => {
+    const u = $("#sWorker").value.trim().replace(/\/+$/, "");
+    if (!u) { $("#sHealth").textContent = "Enter a Worker URL first."; return; }
+    $("#sHealth").textContent = "Testing…";
+    try { const h = await rawFetch(u + "/health", {}, 10000); $("#sHealth").textContent = `Reachable · Jev ${h.jev ? "ready" : "key missing"} · X ${h.x ? "ready" : "off"} · questions ${h.questionsVersion}`; }
+    catch (e) { $("#sHealth").textContent = "Couldn't reach it: " + e.message; }
+  };
+  $("#sSave").onclick = () => {
+    settings.workerUrl = $("#sWorker").value.trim(); settings.useJev = $("#sJev").checked; settings.useX = $("#sX").checked;
+    settings.jevMax = clamp(parseInt($("#sJevMax").value, 10) || 40, 1, 120); settings.xMax = clamp(parseInt($("#sXMax").value, 10) || 0, 0, 40);
+    settings.rpc = $("#sRpc").value.trim() || DEFAULT_RPC; saveSettings(); relayHosts.clear(); jevCache.clear();
+    toast("Saved");
+  };
+  $("#sClearSeen").onclick = () => { mem.seen = {}; mem.save(); toast("Scan memory cleared"); };
+  $("#sClearMute").onclick = () => { mem.muted.clear(); mem.save(); toast("Unmuted everything"); };
+  $("#sClearLog").onclick = () => { if (confirmClear()) { mem.outcomes = {}; mem.save(); renderLog(); toast("Outcome log cleared"); } };
+}
+function confirmClear() { const b = $("#sClearLog"); if (b.dataset.armed) { delete b.dataset.armed; b.textContent = "Clear outcome log"; return true; } b.dataset.armed = "1"; b.textContent = "Tap again to confirm"; return false; }
+
+function init() {
+  if (!MODES[settings.mode]) settings.mode = "default";
+  writeFilterInputs(); bind(); render();
+  if (!workerBase()) setStatus("Press Scan to start. Jev is offline until you add your Worker URL in Settings, so grades will be rules-only.");
+}
+init();
+</script>
+</body>
+</html>
