@@ -37,6 +37,16 @@ Roles, as Faisal set them:
 ### Phase
 - Tie between phases → the rules-based phase if it's one of the tied options.
 
+### Thesis and narrative
+- The page pulls candidate sentences from the coin's own description (up to 6) and from X posts that mention the contract (up to 3), dropping addresses, links and bare "buy/ape" posts.
+- Jev **selects** the sentence that best states what the coin is about (or "none"). It never writes or paraphrases, so the card always quotes real words, labeled with their source and "unverified claim".
+- Jev also picks a narrative category (AI/tech, animal, politics/news, celebrity, meme culture, crypto-native, real-world assets, community takeover, utility claim, other).
+- Without a Jev pick, the card shows the description's first usable line and says so.
+- The thesis is context only. It does not change the grade.
+
+### What we found
+Plain sentences built by code from data already gathered (holder concentration, biggest wallet, creator holdings and prior launches, insider networks, LP lock or curve progress, taxes and authorities), each marked green, amber, red or neutral. Raw numbers stay in the dropdowns.
+
 ### When Jev is unavailable
 No Worker, Jev turned off, or an error → the card says **Rules-only** and why. Nothing is silently faked.
 

@@ -120,6 +120,8 @@ function mockJev(state, idx) {
     rebound: { type: "noul", noul: idx % 5 === 0 ? 0.8 : 0.1 },
     setup: { type: "noul", noul: idx % 7 === 0 ? 0.75 : 0.2 },
     bot_chatter: { type: "choice", choice: "mixed", probabilities: { mixed: 0.6, organic: 0.3, bot_or_paid: 0.1 } },
+    narrative: { type: "choice", choice: "animal_pet", probabilities: { animal_pet: 0.8, other: 0.2 } },
+    ...(state.thesisCandidates?.length ? { thesis: { type: "choice", choice: state.thesisCandidates.at(-1).id, probabilities: { [state.thesisCandidates.at(-1).id]: 0.66, none: 0.1 } } } : {}),
   };
 }
 
@@ -187,6 +189,8 @@ try {
   await page.uncheck("#strict");
   await page.waitForTimeout(200);
   const decideTexts = await page.$$eval(".card .decide", (els) => els.map((e) => e.textContent));
+  ok("rules-only cards fall back to first description line", (await page.$$eval(".card .thesis", (e) => e.map((x) => x.textContent))).some((t) => /first line \(Jev not consulted\)/.test(t)));
+  ok("every card has a What we found block", (await page.$$eval("#list .card", (e) => e.every((x) => x.querySelector(".found li")))));
   ok("cards show rules-only decision", decideTexts.length > 0 && decideTexts.every((t) => t.includes("Rules-only")), decideTexts.length + " cards");
   await ctx.close();
 
@@ -224,6 +228,9 @@ try {
   ok("malformed Jev answers fall back to rules without crashing", rulesFallback > 0, String(rulesFallback));
   ok("honeypot hidden from list (FAIL not passed)", !cards.some((c) => c.key === "bsc:" + tokens[20].addr.toLowerCase()));
   ok("curve read shown", cards.some((c) => /curve \d+% · [\d.]+ SOL/.test(c.text)));
+  ok("thesis picked by Jev shown with source + unverified label", cards.some((c) => /picked by Jev \(66%\)/.test(c.text) && /unverified claim/.test(c.text)));
+  ok("narrative category tag shown", cards.some((c) => c.text.includes("animal")));
+  ok("findings use plain sentences", cards.some((c) => /The top 10 wallets hold [\d.]+% of the supply \(excluding the pool\)/.test(c.text)));
   ok("reads present (heat/trend/lore/phase)", cards.every((c) => /heat:/.test(c.text) && /trend:/.test(c.text) && /lore:/.test(c.text)));
   ok("not-a-prediction label on every card", cards.every((c) => c.text.includes("not a prediction")));
   const radar = await page.$$eval("#radar .chip", (e) => e.map((x) => x.textContent));

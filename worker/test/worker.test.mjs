@@ -17,6 +17,11 @@ globalThis.fetch = async (url, init = {}) => {
     assert.equal(body.model, "jev-latest");
     assert.ok(body.questions.grade && body.questions.verdict);
     assert.equal(init.headers.Authorization, "Bearer test-key");
+    if (body.questions.thesis) {
+      assert.deepEqual(Object.keys(body.questions.thesis.criteria), ["d1", "d2", "none"]);
+      assert.equal(body.state.thesisCandidates, undefined, "candidates stripped from state");
+      return Response.json({ model: "jev-1.13", answers: { thesis: { choice: "D2", probabilities: { d1: 0.2, d2: 0.7, none: 0.1 } }, narrative: { choice: "animal_pet", probabilities: { animal_pet: 0.9 } } }, usage: {} });
+    }
     return Response.json({ model: "jev-1.13", answers: { grade: { type: "choice", choice: "B", probabilities: { A: .3, B: .35, C: .2, D: .1, F: .05 }, confidence: .4 } }, usage: { input_tokens: 900, output_tokens: 0 } });
   }
   if (url.startsWith("https://api.twitterapi.io/twitter/tweet")) {
@@ -92,6 +97,10 @@ assert.equal(r.status, 403, "only read RPC methods relayed");
 
 r = await worker.fetch(new Request("https://w.dev/jev", { method: "POST", headers: O, body: "{}" }), { ...env, TYPESAFE_API_KEY: "" }, ctx);
 assert.equal(r.status, 503);
+r = await req("/jev", { method: "POST", body: JSON.stringify({ coins: [{ id: "t1", state: { coin: { symbol: "PAW" }, thesisCandidates: [{ id: "d1", text: "The first dog on the moon, for real." }, { id: "d2", text: "A pixel dog that paints every holder's portrait." }, { id: "BAD ID", text: "ignored" }] } }] }) });
+j = await r.json();
+assert.equal(j.results.t1.answers.thesis.choice, "d2", "thesis choice normalised to candidate id");
+assert.equal(j.results.t1.answers.narrative.choice, "animal_pet");
 limited = 1;
 r = await req("/x?ca=So11111111111111111111111111111111111111112");
 assert.equal(r.status, 429, "rate limiter enforced");

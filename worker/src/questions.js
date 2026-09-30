@@ -5,7 +5,7 @@
 //
 // Bump QUESTIONS_VERSION whenever wording changes, so cached answers expire.
 
-export const QUESTIONS_VERSION = "2026-09-29.1";
+export const QUESTIONS_VERSION = "2026-09-30.1";
 
 export const QUESTIONS = {
   verdict: {
@@ -107,6 +107,24 @@ export const QUESTIONS = {
     instructions: "Does this coin show a pre-run setup pattern: price consolidating in a tight range (small h1 and h6 changes in `market.priceChange`) while trade counts and buy share in `crowd` rise and liquidity holds steady?"
   },
 
+  narrative: {
+    type: "choice",
+    instructions: "What is this coin's narrative category? Use `coin.name`, `coin.symbol`, `story.description` and `x` when present. Judge what the coin is about, not whether it is good.",
+    criteria: {
+      ai_tech: "AI, agents, robots or a technology theme.",
+      animal_pet: "An animal or pet character.",
+      political_news: "Politics, politicians or a news event.",
+      celebrity_influencer: "A celebrity, streamer or influencer.",
+      internet_meme_culture: "An internet meme, joke or cultural reference.",
+      crypto_native: "A joke or theme about crypto itself, a chain, an exchange or a platform.",
+      real_world_assets: "Stocks, commodities or real-world assets.",
+      community_takeover: "A revival or takeover of an older coin by its community.",
+      utility_claim: "Claims a product, app, game or utility.",
+      other: "A clear theme that fits none of the above.",
+      not_enough_evidence: "Too little information to tell what it is about."
+    }
+  },
+
   bot_chatter: {
     type: "choice",
     instructions: "Judge the X/Twitter chatter about this coin from `x`: tweets that mention the contract address, author follower counts and account ages, the share of duplicate text, and how many distinct accounts mention the ticker.",
@@ -119,6 +137,39 @@ export const QUESTIONS = {
     }
   }
 };
+
+// Thesis: the page finds candidate sentences in the coin's own description and X posts;
+// Jev only SELECTS the one that best states what the coin is about (it never writes text).
+const CAND_ID = /^[a-z0-9_]{1,8}$/;
+export function thesisQuestion(candidates) {
+  if (!Array.isArray(candidates)) return null;
+  const criteria = {};
+  for (const c of candidates.slice(0, 9)) {
+    if (!c || !CAND_ID.test(String(c.id)) || typeof c.text !== "string") continue;
+    const text = c.text.trim().slice(0, 240);
+    if (text.length >= 8) criteria[c.id] = text;
+  }
+  if (!Object.keys(criteria).length) return null;
+  criteria.none = "None of these sentences explains what the coin is about.";
+  return {
+    type: "choice",
+    instructions: "Which sentence best states this coin's thesis: what the coin is about and why it exists, in the project's or community's own words? Prefer a specific, concrete sentence over hype, price talk, or calls to buy. Use `coin` and `story` for context.",
+    criteria,
+  };
+}
+
+// Builds the questions for one coin and strips the candidate list out of the state.
+export function questionsFor(state) {
+  const qs = { ...QUESTIONS };
+  let clean = state;
+  if (state && typeof state === "object" && state.thesisCandidates) {
+    const tq = thesisQuestion(state.thesisCandidates);
+    if (tq) qs.thesis = tq;
+    clean = { ...state };
+    delete clean.thesisCandidates;
+  }
+  return { questions: qs, state: clean };
+}
 
 // Compact schema the page can display without knowing the wording.
 export function schema() {

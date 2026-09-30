@@ -14,13 +14,13 @@
 //   GET  /x?ca=&sym=&handle=
 //   GET  /relay?u=<url>  |  POST /relay?u=<solana rpc url>  (allowlisted hosts)
 
-import { QUESTIONS, QUESTIONS_VERSION, schema } from "./questions.js";
+import { QUESTIONS, QUESTIONS_VERSION, schema, questionsFor } from "./questions.js";
 
 const TYPESAFE_URL = "https://api.typesafe.ai/v1/systemone";
 const TYPESAFE_MODEL = "jev-latest";
 const TW_BASE = "https://api.twitterapi.io";
 const MAX_COINS = 12;
-const MAX_STATE_BYTES = 12000;
+const MAX_STATE_BYTES = 16000;
 const JEV_CONCURRENCY = 6;
 const HOUR = 3600;
 
@@ -98,9 +98,10 @@ async function handleJev(request, env, ctx, cors) {
     const hit = await caches.default.match(cacheKey);
     if (hit) { results[id] = await hit.json(); usage.cached++; return; }
 
-    const res = await callJev(env.TYPESAFE_API_KEY, coin.state);
+    const { questions, state } = questionsFor(coin.state);
+    const res = await callJev(env.TYPESAFE_API_KEY, state, questions);
     if (res.error) { results[id] = { error: res.error }; return; }
-    const out = { answers: normalizeAnswers(res.answers), model: res.model };
+    const out = { answers: normalizeAnswers(res.answers, questions), model: res.model };
     results[id] = out;
     usage.input_tokens += res.usage?.input_tokens || 0;
     usage.output_tokens += res.usage?.output_tokens || 0;
@@ -110,8 +111,8 @@ async function handleJev(request, env, ctx, cors) {
   return json({ results, usage, questionsVersion: QUESTIONS_VERSION }, 200, cors);
 }
 
-async function callJev(apiKey, state) {
-  const payload = JSON.stringify({ model: TYPESAFE_MODEL, state, questions: QUESTIONS });
+async function callJev(apiKey, state, questions = QUESTIONS) {
+  const payload = JSON.stringify({ model: TYPESAFE_MODEL, state, questions });
   let delay = 600;
   for (let attempt = 0; attempt < 4; attempt++) {
     const r = await fetch(TYPESAFE_URL, {
@@ -135,9 +136,9 @@ async function callJev(apiKey, state) {
 //   choice -> { choice, probabilities (keys = our option names), confidence }
 //   score  -> { fraction 0..1 or null, score, probabilities, legend, confidence }
 //   noul   -> { noul }
-export function normalizeAnswers(answers) {
+export function normalizeAnswers(answers, questions = QUESTIONS) {
   const out = {};
-  for (const [id, q] of Object.entries(QUESTIONS)) {
+  for (const [id, q] of Object.entries(questions)) {
     const a = answers && answers[id];
     if (!a || typeof a !== "object") continue;
     if (q.type === "choice") {

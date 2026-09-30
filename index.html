@@ -101,6 +101,14 @@ header.top{padding:18px 0 10px;display:flex;gap:12px;align-items:center;flex-wra
 .probs{display:flex;height:6px;border-radius:4px;overflow:hidden;margin:5px 0 3px;background:var(--line)}
 .probs i{display:block;height:100%}
 .caps{font-size:12px;color:var(--amber)}
+.thesis,.found{background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px}
+.th-h{display:flex;align-items:center;gap:6px;justify-content:space-between;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.th-q{color:var(--text);line-height:1.4;overflow-wrap:anywhere}
+.th-src{font-size:11px;color:var(--dim);margin-top:3px}
+.found ul{margin:0;padding-left:16px}
+.found li{margin:3px 0;line-height:1.4}
+.found li::marker{font-size:1.1em}
+.f-g::marker{color:var(--green)}.f-a::marker{color:var(--amber)}.f-r::marker{color:var(--red)}.f-n::marker{color:var(--dim)}
 .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .m{background:var(--bg2);border-radius:8px;padding:5px 7px;min-width:0}
 .m .k{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.3px}
@@ -118,7 +126,8 @@ details .kv{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin:6px 
 details .kv span:nth-child(odd){color:var(--dim)}
 .links{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;align-items:center}
 .actions{display:flex;gap:4px;margin-left:auto}
-.copybtn{margin-left:6px;font:600 11px system-ui,sans-serif;padding:2px 8px;border-radius:6px;border:1px solid var(--line2);background:var(--card2);color:var(--blue);vertical-align:middle;cursor:pointer}
+.symt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.copybtn{flex:none;margin-left:6px;font:600 11px system-ui,sans-serif;padding:2px 8px;border-radius:6px;border:1px solid var(--line2);background:var(--card2);color:var(--blue);vertical-align:middle;cursor:pointer}
 .copybtn:hover{border-color:var(--blue)}
 .copybtn:active{transform:scale(.96)}
 .ca{font-family:var(--mono);font-size:11px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
@@ -1005,6 +1014,7 @@ function duplicateLosers(coins) {
 // Everything code can compute before Jev looks at the coin.
 function prepareEvidence(c) {
   c.rv = ruleVerdict(c);
+  c.thesisCands = thesisCandidates(c);
   const cr = crowdOf(c);
   c.crowd = cr;
   c.derived = Object.assign(c.derived || {}, {
@@ -1013,6 +1023,76 @@ function prepareEvidence(c) {
   });
   c.pillars = rulePillars(c);
   c.ruleGrade = gradeFromScore(c.pillars.total);
+}
+
+// ------------------------------------------------------------ thesis candidates
+// Sentences in the project's own description, plus a few X posts about the coin. Jev picks one;
+// nothing is ever written or paraphrased, so the card always quotes real words.
+const CJK_ANY = /[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/;
+function cleanSentence(t, ca) {
+  let x = String(t || "").replace(/https?:\/\/\S+/g, "").replace(/\s+/g, " ").trim();
+  if (ca) x = x.split(ca).join("").trim();
+  x = x.replace(/[1-9A-HJ-NP-Za-km-z]{32,44}|0x[0-9a-fA-F]{40}/g, "").replace(/\s{2,}/g, " ").trim();
+  return x;
+}
+function isUsefulSentence(x) {
+  const min = CJK_ANY.test(x) ? 5 : 14;
+  if (x.length < min || x.length > 240) return false;
+  if (/^(ca|contract|buy|ape|aping|lfg|gm|100x|send it)\b[:!\s]?/i.test(x) && x.length < 40) return false;
+  if (!/[\p{L}]{3,}/u.test(x)) return false;
+  return true;
+}
+function thesisCandidates(c) {
+  const out = [], seen = new Set();
+  const push = (id, text, source) => { const k = text.toLowerCase(); if (!seen.has(k) && isUsefulSentence(text)) { seen.add(k); out.push({ id, text, source }); } };
+  const raw = String(c.story.description || "");
+  const pieces = raw.split(/\n+/).flatMap((line) => line.split(/(?<=[.!?])\s+|(?<=[。！？])/));
+  pieces.map((x) => cleanSentence(x, c.address)).filter(Boolean).slice(0, 14)
+    .forEach((x) => { if (out.filter((o) => o.source === "description").length < 6) push("d" + (out.length + 1), x.slice(0, 240), "description"); });
+  const desc = cleanSentence(raw, c.address);
+  if (!out.length && desc && isUsefulSentence(desc.slice(0, 240))) push("d1", desc.slice(0, 240), "description");
+  const tweets = (c.x && !c.x.error && c.x.ca?.sample) || [];
+  tweets.slice(0, 3).forEach((t, i) => push("x" + (i + 1), cleanSentence(t.text, c.address).slice(0, 240), "x"));
+  return out.slice(0, 9);
+}
+
+// ------------------------------------------------------------ plain-language findings
+// Sentences built only from data already gathered; tone: g = reassuring, a = caution, r = risk, n = neutral.
+function findings(c) {
+  const s = c.sec || {}, h = s.holders || {}, out = [];
+  const add = (lvl, text) => out.push({ lvl, text });
+  if (s.ok && h.top10 !== null && h.top10 !== undefined) {
+    const t = h.top10.toFixed(1);
+    if (h.top10 < 20) add("g", `The top 10 wallets hold ${t}% of the supply (excluding the pool). Supply is fairly spread out.`);
+    else if (h.top10 <= 35) add("a", `The top 10 wallets hold ${t}% of the supply (excluding the pool). A few wallets can move the price.`);
+    else add("r", `The top 10 wallets hold ${t}% of the supply (excluding the pool). A handful of wallets could crash the price.`);
+    if ((h.top1 ?? 0) >= 5) add(h.top1 >= 10 ? "r" : "a", `The biggest single wallet holds ${h.top1.toFixed(1)}%.`);
+  } else add("n", "Holder data isn't available for this coin, so concentration is unknown.");
+  if (s.ok) {
+    const cp = h.creatorPct, pl = h.priorLaunches;
+    const holds = cp === null || cp === undefined ? "We couldn't see how much the creator holds" : cp < 0.05 ? "The creator holds almost none of the supply now" : `The creator holds ${cp.toFixed(cp < 1 ? 2 : 1)}% now`;
+    const hist = pl === null || pl === undefined ? "" : pl === 0 ? ", and this is their first known launch" : pl >= 5 ? `, and has launched ${pl} other coins (a serial deployer)` : `, and has launched ${pl} other coin${pl > 1 ? "s" : ""}`;
+    add(pl >= 5 || (cp ?? 0) >= 10 ? "r" : (cp ?? 0) >= 5 ? "a" : "n", holds + hist + ".");
+    if (h.insiderNetworks || (h.insiderPct ?? 0) >= 1 || h.graphInsiders) {
+      add((h.insiderPct ?? 0) >= 5 || h.insiderNetworks > 1 ? "r" : "a", `RugCheck flags linked insider wallets${h.insiderPct ? ` holding ${h.insiderPct.toFixed(1)}%` : ""}${h.insiderNetworks ? ` across ${h.insiderNetworks} network${h.insiderNetworks > 1 ? "s" : ""}` : ""}.`);
+    } else if (s.checker === "rugcheck" && !s.partial) add("g", "RugCheck found no linked insider wallets.");
+  }
+  if (onCurve(c) && c.curve?.validated) add("n", `It's still on the pump.fun bonding curve: ${c.curve.pctSold.toFixed(0)}% sold, ${c.curve.solRaised.toFixed(1)} SOL raised.`);
+  else if (c.curve?.graduated) add("g", "It graduated from the pump.fun bonding curve.");
+  else {
+    const lock = lpLockedPct(c);
+    if (lock === null) add("n", "We couldn't confirm whether the liquidity is locked.");
+    else if (lock >= 95) add("g", "The liquidity pool is locked or burned, so it can't be pulled.");
+    else add(lock < 50 ? "r" : "a", `Only ${lock.toFixed(0)}% of the liquidity is locked. The rest could be pulled.`);
+  }
+  if (s.ok && s.checker === "goplus") {
+    if (s.honeypot) add("r", "GoPlus flags it as a honeypot: you may not be able to sell.");
+    else if ((s.sellTax ?? 0) > 0.5 || (s.buyTax ?? 0) > 0.5) add((s.sellTax ?? 0) > 5 ? "a" : "n", `Taxes: ${(s.buyTax ?? 0).toFixed(1)}% on buys, ${(s.sellTax ?? 0).toFixed(1)}% on sells.`);
+    if (s.mintable) add("a", "The contract can mint more tokens.");
+  }
+  if (s.ok && s.checker === "rugcheck" && !s.partial && (s.mintAuthority || s.freezeAuthority)) add("r", `${s.mintAuthority ? "Mint" : "Freeze"} authority is still active.`);
+  if (!s.ok) add("n", (s.reason || "No security checker covers this coin") + ".");
+  return out;
 }
 
 // ------------------------------------------------------------ Jev: state packet
@@ -1054,6 +1134,7 @@ function jevState(c) {
     x: c.x && !c.x.error ? { provided: true, contractMentions: c.x.ca, tickerMentions: c.x.ticker, officialAccount: c.x.official } : { provided: false },
     derived: { heat: c.derived.heat, attention: c.derived.attention, pricedIn: c.derived.pricedIn, gap: c.derived.gap },
     rules: { pillars: c.pillars, composite: c.pillars.total, grade: c.ruleGrade, verdict: c.rv.v, capsAtC: c.caps },
+    thesisCandidates: (c.thesisCands || []).map(({ id, text }) => ({ id, text })),
   };
 }
 function fingerprint(c) {
@@ -1214,6 +1295,20 @@ function decide(c) {
       d.bots = !x.tweets ? "silence" : (x.tinyOrNewAuthorShare > 0.6 || x.duplicateTextShare > 0.5) ? "bot_or_paid" : (x.tinyOrNewAuthorShare > 0.3 || x.duplicateTextShare > 0.2) ? "mixed" : "organic";
     }
   }
+  // ---- Thesis (Jev selects among real sentences; code falls back to the description's first line)
+  const cands = c.thesisCands || [];
+  const ids = [...cands.map((x) => x.id), "none"];
+  const tp = J?.thesis ? sortedProbs(J.thesis, ids) : [];
+  const tpick = tp[0]?.k || (J?.thesis && validChoice(J.thesis, ids));
+  if (tpick && tpick !== "none") {
+    const cand = cands.find((x) => x.id === tpick);
+    d.thesis = { text: cand.text, source: cand.source, by: "jev", p: tp[0]?.p ?? null };
+  } else if (tpick === "none") d.thesis = { text: null, by: "jev", note: "Jev found no sentence that explains the coin" };
+  else if (cands.find((x) => x.source === "description")) d.thesis = { text: cands.find((x) => x.source === "description").text, source: "description", by: "first line" };
+  else d.thesis = { text: null, note: "No description or story given" };
+  const NARR = ["ai_tech", "animal_pet", "political_news", "celebrity_influencer", "internet_meme_culture", "crypto_native", "real_world_assets", "community_takeover", "utility_claim", "other", "not_enough_evidence"];
+  const np = J?.narrative ? sortedProbs(J.narrative, NARR) : [];
+  d.narrative = np[0]?.k || (J?.narrative && validChoice(J.narrative, NARR)) || null;
   c.d = d;
 }
 
@@ -1400,6 +1495,7 @@ async function processCoins(prog = () => {}) {
   if (settings.useX && workerBase() && settings.xMax > 0) {
     prog(0.55, "X layer…");
     await fetchX(cands.slice(0, settings.xMax));
+    for (const c of cands) c.thesisCands = thesisCandidates(c);
     computeGaps(met);
   }
   prog(0.6, "Jev deciding…");
@@ -1511,7 +1607,7 @@ async function checkCA(ca) {
     if (peers.length) computeGaps(peers);
     coin.caps = capsFor(coin, duplicateLosers([...S.live.filter((c) => c.key !== coin.key), coin]));
     coin.terms = termsOf(coin);
-    if (settings.useX) await fetchX([coin]);
+    if (settings.useX) { await fetchX([coin]); coin.thesisCands = thesisCandidates(coin); }
     progress(0.6, "Jev deciding…");
     coin.jev = null; coin.jevError = null;
     await askJev([coin], () => {});
@@ -1651,6 +1747,17 @@ function card(c, opt = {}) {
   if (seen && seen.n > 1) tags.push(`<span class="tag" title="Seen in ${seen.n} scans since ${new Date(seen.f).toLocaleString()}">seen ${seen.n}× · ${age((Date.now() - seen.f) / 3.6e6)}</span>`);
   if (c.prevSeen?.m && m.mcap) { const dm = (m.mcap / c.prevSeen.m - 1) * 100; if (Math.abs(dm) >= 1) tags.push(`<span class="tag ${dm > 0 ? "g" : "r"}" title="Market cap change since the previous scan">${pct(dm)} since last scan</span>`); }
 
+  // Thesis + findings
+  const NARR_L = { ai_tech: "AI / tech", animal_pet: "animal", political_news: "politics / news", celebrity_influencer: "celebrity", internet_meme_culture: "meme culture", crypto_native: "crypto-native", real_world_assets: "real-world assets", community_takeover: "community takeover", utility_claim: "utility claim", other: "other" };
+  const th = d.thesis || {};
+  const thesisHtml = `<div class="thesis">
+    <div class="th-h"><span>Thesis</span>${d.narrative && NARR_L[d.narrative] ? `<span class="tag v" title="Narrative category (Jev)">${esc(NARR_L[d.narrative])}</span>` : ""}</div>
+    ${th.text ? `<div class="th-q">“${esc(th.text)}”</div><div class="th-src">${th.source === "x" ? "From an X post mentioning the contract" : "The project's own description"} · ${th.by === "jev" ? `picked by Jev${th.p ? ` (${Math.round(th.p * 100)}%)` : ""}` : "first line (no Jev pick)"} · unverified claim</div>`
+      : `<div class="th-src">${esc(th.note || "No story given")}.</div>`}
+  </div>`;
+  const found = findings(c);
+  const foundHtml = `<div class="found"><div class="th-h"><span>What we found</span></div><ul>${found.map((f) => `<li class="f-${f.lvl}">${esc(f.text)}</li>`).join("")}</ul></div>`;
+
   // Decision box
   let decide = "";
   if (d.source === "jev") {
@@ -1702,11 +1809,13 @@ function card(c, opt = {}) {
   return `<article class="card ${opt.checked ? "checked" : ""} ${c.gone ? "gone" : ""}" data-key="${esc(c.key)}">
     <div class="chead">
       ${img ? `<img class="icon" src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.visibility='hidden'">` : `<div class="icon"></div>`}
-      <div class="ctitle"><div class="sym">$${esc(c.symbol)} <button class="copybtn" data-act="copy" data-ca="${esc(c.address)}" title="Copy contract address">⧉ Copy CA</button></div><div class="nm">${esc(c.name)} · ${esc(chainL)} · ${age(c.ageH)} · ${esc(LAUNCHPAD_NAME[c.dexId] || c.dexId || "")}</div></div>
+      <div class="ctitle"><div class="sym"><span class="symt">$${esc(c.symbol)}</span><button class="copybtn" data-act="copy" data-ca="${esc(c.address)}" title="Copy contract address">⧉ Copy CA</button></div><div class="nm">${esc(c.name)} · ${esc(chainL)} · ${age(c.ageH)} · ${esc(LAUNCHPAD_NAME[c.dexId] || c.dexId || "")}</div></div>
       <div class="pills"><span class="verdict v-${esc(d.verdict)}">${esc(d.verdict)}</span><span class="grade g${esc(d.grade)}" title="Evidence grade. Not a prediction.">${esc(d.grade)}</span></div>
     </div>
+    ${thesisHtml}
     ${decide}
     ${c.caps.length ? `<div class="caps">Capped at C: ${esc(c.caps.join("; "))}</div>` : ""}
+    ${foundHtml}
     <div class="metrics">
       <div class="m"><div class="k">Mcap</div><div class="val">${money(m.mcap)}</div></div>
       <div class="m"><div class="k">Liquidity${onCurve(c) ? " (curve)" : ""}</div><div class="val">${money(m.liq)}</div></div>
@@ -1719,7 +1828,7 @@ function card(c, opt = {}) {
       ${pill("Security", P.security, 35)}${pill("Holders", P.holders, 25)}${pill("Exit depth", P.exitDepth, 15)}${pill("Structure", P.structure, 5)}${pill((c.ageH ?? 99) < 24 ? "Activity (story+vol)" : "Activity (trend+vol)", P.activity, 20)}
     </div>
     <details><summary>Security · ${esc(d.verdict)}</summary>${secBody}</details>
-    <details><summary>Holders & creator</summary>${holdBody}</details>
+    <details><summary>Holders & creator (raw numbers)</summary>${holdBody}</details>
     ${xBody ? `<details><summary>X / Twitter</summary>${xBody}</details>` : ""}
     <div class="links">${links}
       <div class="actions">
