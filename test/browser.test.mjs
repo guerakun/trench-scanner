@@ -158,7 +158,7 @@ async function route(r) {
 }
 
 // ---------- server
-const server = http.createServer((q, s) => { const f = path.join(ROOT, "index.html"); s.writeHead(200, { "Content-Type": "text/html" }); s.end(fs.readFileSync(f)); }).listen(8080);
+const server = http.createServer((q, s) => { const f = path.join(ROOT, q.url.startsWith("/help.html") ? "help.html" : "index.html"); s.writeHead(200, { "Content-Type": "text/html" }); s.end(fs.readFileSync(f)); }).listen(8080);
 const browser = await chromium.launch();
 const errors = [];
 const results = [];
@@ -335,6 +335,21 @@ try {
   await page.screenshot({ path: path.join(OUT, "mobile.png"), fullPage: false });
   await page.click("#fToggle");
   await page.screenshot({ path: path.join(OUT, "mobile-filters.png"), fullPage: false });
+  await ctx.close();
+
+  // 3b) Help page: loads, linked from the scanner, no horizontal scroll on phones, anchors resolve
+  ({ ctx, page } = await newPage({ width: 390, height: 844 }));
+  await page.goto("http://localhost:8080/");
+  await page.click('a[href="help.html"] >> nth=0');
+  await page.waitForURL(/help\.html/);
+  ok("help page opens from the scanner", (await page.title()) === "How to Use Trench Scanner");
+  ok("help page: no horizontal scroll on phone", (await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)) <= 0);
+  const missing = await page.evaluate(() => [...document.querySelectorAll('a[href^="#"]')].map((a) => a.getAttribute("href")).filter((h) => !document.querySelector(h)));
+  ok("help page: every in-page link has a target", missing.length === 0, missing.join(","));
+  await page.screenshot({ path: path.join(OUT, "help-mobile.png") });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("http://localhost:8080/help.html#card");
+  await page.screenshot({ path: path.join(OUT, "help-desktop.png") });
   await ctx.close();
 
   // 4) Strict empty state wording

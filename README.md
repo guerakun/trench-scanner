@@ -11,6 +11,7 @@ It will be hosted on GitHub Pages.
 | Path | What it is |
 | --- | --- |
 | `index.html` | The whole screener: one file, no build step, no keys |
+| `help.html` | The "How to use" guide (quick start, annotated card, grades, modes, FAQ) |
 | `worker/` | Cloudflare Worker that holds your keys and runs Jev, the optional X layer, and a read-only data relay |
 | `test/` | Offline Worker test and a full end-to-end browser test with every API mocked |
 | `SKILL.md` | Local copy of the TypeSafe skill (typesafe-ai/skills, MIT) |

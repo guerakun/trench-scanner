@@ -24,6 +24,7 @@
 html,body{margin:0;background:var(--bg);color:var(--text)}
 body{font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans","Noto Sans CJK SC",sans-serif;-webkit-text-size-adjust:100%;padding-bottom:env(safe-area-inset-bottom)}
 a{color:var(--blue);text-decoration:none} a:hover{text-decoration:underline}
+a.btn{color:var(--text)} a.btn:hover{text-decoration:none}
 button,input,select{font:inherit;color:inherit}
 button{cursor:pointer}
 .wrap{max-width:1100px;margin:0 auto;padding:0 16px}
@@ -175,6 +176,7 @@ footer p{margin:4px 0}
     <button class="btn primary" id="scanBtn">Scan</button>
     <button class="btn" id="refreshBtn" title="Re-pull market data for every coin on screen">Refresh</button>
     <button class="btn" id="settingsBtn" title="Worker, Jev, X layer, RPC">Settings</button>
+    <a class="btn" href="help.html" title="How to use the scanner">How to use</a>
   </header>
   <nav class="modes" id="modes"></nav>
 </div>
@@ -223,7 +225,7 @@ footer p{margin:4px 0}
   <footer>
     <p><b>Grades rank evidence, not outcomes.</b> An A-grade memecoin is still a lottery ticket. Nothing here is a buy rating, a price prediction, or financial advice.</p>
     <p>Verdict, grade and category calls come from Jev (TypeSafe) with its probabilities shown on each card. When Jev's top choices are close, the page breaks the tie with the rules-based evidence and, if that's still unclear, takes the more cautious answer. Hard caps and hard security failures are always applied by code. Every read (heat, trend, lore, gap, phase, rebound, setup) is a heuristic or a model judgment, labeled "not a prediction".</p>
-    <p>Data: DexScreener, GeckoTerminal, RugCheck, GoPlus, Solana RPC (PublicNode by default), Bubblemaps; optional X data via your own Worker. Chains without a security checker show UNKNOWN, never a pass. Scan memory lives only in this browser.</p>
+    <p>Data: DexScreener, GeckoTerminal, RugCheck, GoPlus, Solana RPC (PublicNode by default), Bubblemaps; optional X data via your own Worker. Chains without a security checker show UNKNOWN, never a pass. Scan memory lives only in this browser. · <a href="help.html">How to use this site</a></p>
   </footer>
 </main>
 
@@ -1680,7 +1682,7 @@ function renderChecked() {
   $("#checked").innerHTML = c ? `<div class="section-h">Checked address (shown regardless of filters and strict mode)</div><div class="list" style="margin-bottom:14px">${card(c, { checked: true })}</div>` : "";
 }
 function renderList() {
-  if (!S.funnel) { $("#list").innerHTML = `<div class="empty"><h3>Ready when you are</h3>Pick a mode and press Scan. Nothing here is a buy signal.</div>`; return; }
+  if (!S.funnel) { $("#list").innerHTML = `<div class="empty"><h3>Ready when you are</h3>Pick a mode and press Scan. Nothing here is a buy signal.<br><a href="help.html">New here? Read the 5-minute guide</a></div>`; return; }
   if (!S.shown.length) {
     const why = settings.strict ? "Strict mode only shows A and B grades, and no coin earned one this scan." : "No coin passed the filters and security checks.";
     $("#list").innerHTML = `<div class="empty"><h3>Nothing met the bar.</h3>${esc(why)} That's the screener doing its job: most launches don't deserve your attention.</div>`;

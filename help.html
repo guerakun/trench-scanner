@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0b0e14">
+<title>How to Use Trench Scanner</title>
+<meta name="description" content="A plain-language guide to Trench Scanner: quick start, reading a coin card, grades, verdicts, modes and FAQ.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0e14'/%3E%3Cpath d='M12 44 L26 26 L36 36 L52 16' stroke='%2359d499' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#0b0e14; --bg2:#10141c; --card:#141925; --card2:#1a2030; --line:#252c3d; --line2:#323b52;
+  --text:#e6e9f0; --muted:#8b93a7; --dim:#5d6579;
+  --green:#59d499; --green-bg:rgba(89,212,153,.12);
+  --amber:#f2b74a; --amber-bg:rgba(242,183,74,.12);
+  --red:#f06b6b; --red-bg:rgba(240,107,107,.12);
+  --blue:#6ea8fe; --blue-bg:rgba(110,168,254,.12);
+  --violet:#b294f7; --violet-bg:rgba(178,148,247,.12);
+  --gA:#59d499; --gB:#9ad86b; --gC:#f2b74a; --gD:#f08a4b; --gF:#f06b6b;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:16px}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif;-webkit-text-size-adjust:100%}
+a{color:var(--blue);text-decoration:none} a:hover{text-decoration:underline}
+.wrap{max-width:1100px;margin:0 auto;padding:0 16px}
+header.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:18px 0 8px}
+header.top .brand{flex:1;min-width:200px}
+header.top h1{margin:0;font-size:22px}
+header.top small{color:var(--muted)}
+.btn{display:inline-block;background:var(--card2);border:1px solid var(--line2);border-radius:10px;padding:8px 14px;color:var(--text);white-space:nowrap}
+.btn:hover{text-decoration:none;border-color:var(--dim)}
+.btn.primary{background:var(--green);color:#06120c;border-color:var(--green);font-weight:600}
+.layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:32px;align-items:start;padding-bottom:40px}
+nav.toc{position:sticky;top:16px;font-size:14px;border-left:1px solid var(--line);padding-left:14px}
+nav.toc b{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+nav.toc a{display:block;color:var(--muted);padding:3px 0}
+nav.toc a:hover{color:var(--text);text-decoration:none}
+main section{padding:8px 0 20px;border-bottom:1px solid var(--line)}
+main section:last-child{border-bottom:none}
+h2{font-size:21px;margin:18px 0 8px}
+h3{font-size:16px;margin:18px 0 6px}
+p{margin:8px 0}
+.lead{font-size:17px;color:var(--text)}
+.muted{color:var(--muted)}
+.callout{border-radius:10px;padding:12px 14px;margin:12px 0;border:1px solid}
+.callout.warn{background:var(--amber-bg);border-color:rgba(242,183,74,.35)}
+.callout.info{background:var(--blue-bg);border-color:rgba(110,168,254,.35)}
+.callout.good{background:var(--green-bg);border-color:rgba(89,212,153,.35)}
+.callout b{color:var(--text)}
+/* quick start */
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:12px 0;counter-reset:step}
+.step{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;position:relative}
+.step::before{counter-increment:step;content:counter(step);display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--green);color:#06120c;font-weight:800;margin-bottom:8px}
+.step h3{margin:0 0 4px;font-size:15px}
+.step p{margin:0;color:var(--muted);font-size:14px}
+/* annotated card */
+.anatomy{display:grid;grid-template-columns:minmax(280px,380px) minmax(0,1fr);gap:24px;align-items:start;margin:12px 0}
+.demo{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:9px;font-size:13px;line-height:1.45}
+.pin{display:inline-grid;place-items:center;min-width:20px;height:20px;border-radius:50%;background:var(--violet);color:#120b24;font:700 11px system-ui,sans-serif;flex:none;margin-right:4px}
+.demo .row{display:flex;align-items:center;gap:8px}
+.demo .ico{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#3a4a6b,#1f2940);flex:none}
+.demo .sym{font-weight:700;font-size:15px}
+.demo .nm{color:var(--muted);font-size:12px}
+.demo .copy{white-space:nowrap;font:600 11px system-ui,sans-serif;padding:2px 8px;border-radius:6px;border:1px solid var(--line2);background:var(--card2);color:var(--blue)}
+.demo .verdict{font-size:11px;font-weight:700;padding:3px 7px;border-radius:6px;background:var(--green-bg);color:var(--green)}
+.demo .grade{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;font-weight:800;font-size:17px;color:#0b0e14;background:var(--gB)}
+.box{background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:7px 9px}
+.box .h{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;display:flex;justify-content:space-between;align-items:center}
+.tag{font-size:11px;padding:2px 7px;border-radius:6px;background:var(--card2);color:var(--muted);white-space:nowrap;display:inline-block}
+.tag.v{background:var(--violet-bg);color:var(--violet)} .tag.b{background:var(--blue-bg);color:var(--blue)}
+.tag.g{background:var(--green-bg);color:var(--green)} .tag.a{background:var(--amber-bg);color:var(--amber)} .tag.r{background:var(--red-bg);color:var(--red)}
+.probs{display:flex;height:6px;border-radius:4px;overflow:hidden;margin:5px 0 3px}
+.probs i{display:block;height:100%}
+.found{margin:0;padding-left:16px}
+.found li::marker{color:var(--green)} .found li.a::marker{color:var(--amber)} .found li.n::marker{color:var(--dim)}
+.metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.m{background:var(--bg2);border-radius:8px;padding:5px 7px}
+.m .k{font-size:10px;color:var(--dim);text-transform:uppercase}
+.up{color:var(--green)} .dn{color:var(--red)}
+.pillars{display:grid;grid-template-columns:auto 1fr auto;gap:3px 8px;font-size:11px;align-items:center;color:var(--muted)}
+.pbar{height:5px;background:var(--line);border-radius:3px;overflow:hidden}
+.pbar i{display:block;height:100%;background:var(--blue)}
+.legend{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.legend li{display:flex;gap:10px;align-items:flex-start}
+.legend li div{min-width:0}
+.legend b.lt{display:block}
+.legend span.d{color:var(--muted);font-size:14px}
+/* tables */
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;margin:10px 0}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{color:var(--muted);font-weight:500;font-size:12px;text-transform:uppercase;letter-spacing:.3px;background:var(--bg2)}
+tr:last-child td{border-bottom:none}
+td .g{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:7px;font-weight:800;color:#0b0e14}
+.gA{background:var(--gA)} .gB{background:var(--gB)} .gC{background:var(--gC)} .gD{background:var(--gD)} .gF{background:var(--gF)}
+/* glossary + faq */
+dl.gloss{display:grid;grid-template-columns:minmax(120px,190px) minmax(0,1fr);gap:8px 16px;margin:10px 0}
+dl.gloss dt{font-weight:600}
+dl.gloss dd{margin:0;color:var(--muted)}
+details.faq{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:8px 0}
+details.faq summary{cursor:pointer;font-weight:600;list-style:none}
+details.faq summary::-webkit-details-marker{display:none}
+details.faq summary::before{content:"+";display:inline-block;width:18px;color:var(--green);font-weight:800}
+details.faq[open] summary::before{content:"–"}
+details.faq p{color:var(--muted);margin:8px 0 2px}
+code{font-family:var(--mono);font-size:13px;background:var(--card2);padding:1px 5px;border-radius:5px;overflow-wrap:anywhere}
+pre{background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:10px 12px;overflow-x:auto;font-size:13px}
+footer{border-top:1px solid var(--line);color:var(--muted);font-size:13px;padding:16px 0 28px}
+@media (max-width:860px){
+  .layout{grid-template-columns:1fr;gap:8px}
+  nav.toc{position:static;border-left:none;padding:10px 12px;background:var(--card);border:1px solid var(--line);border-radius:10px;display:flex;flex-wrap:wrap;gap:4px 14px}
+  nav.toc b{width:100%;margin-bottom:0}
+  nav.toc a{padding:2px 0}
+  .anatomy{grid-template-columns:1fr}
+  dl.gloss{grid-template-columns:1fr;gap:2px 0}
+  dl.gloss dd{margin-bottom:10px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>How to use Trench Scanner</h1>
+      <small>A five-minute guide. No crypto jargon required.</small>
+    </div>
+    <a class="btn primary" href="./">Open the scanner</a>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="On this page">
+      <b>On this page</b>
+      <a href="#what">What it is</a>
+      <a href="#start">Quick start</a>
+      <a href="#card">Reading a coin card</a>
+      <a href="#grades">Grades and verdicts</a>
+      <a href="#reads">The small tags</a>
+      <a href="#modes">Scan modes</a>
+      <a href="#filters">Filters and strict mode</a>
+      <a href="#tools">Other tools</a>
+      <a href="#devices">Phone and AI agents</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+
+    <main>
+      <section id="what">
+        <h2>What it is</h2>
+        <p class="lead">Trench Scanner looks at brand-new memecoins and sorts out which ones have <b>better evidence of being safe and well-built</b>, and which ones show warning signs.</p>
+        <p>It pulls public data (prices, trading, holders, security checks), gathers it into an evidence file for each coin, and asks <b>Jev</b>, an AI decision model, to grade it. Clear rules then double-check Jev's call and enforce hard safety limits.</p>
+        <div class="callout warn"><b>It does not tell you what to buy.</b> A grade ranks the evidence, not the future price. An A-grade memecoin is still a lottery ticket: most memecoins go to zero, even clean ones. Never put in money you can't afford to lose.</div>
+      </section>
+
+      <section id="start">
+        <h2>Quick start</h2>
+        <div class="steps">
+          <div class="step"><h3>Pick a mode</h3><p>The chips under the title, like <b>Default scan</b> or <b>Early hunt</b>. Not sure? Use Default.</p></div>
+          <div class="step"><h3>Tap Scan</h3><p>Wait about 20 seconds. The green bar shows progress.</p></div>
+          <div class="step"><h3>Read the cards</h3><p>Start with the grade and verdict, then the <b>Thesis</b> and <b>What we found</b>. Tap a coin's <b>Copy CA</b> to grab its address.</p></div>
+        </div>
+        <div class="callout info"><b>Seeing "Nothing met the bar"?</b> That's normal and it's the tool working. Strict mode only shows A and B grades, and most launches don't earn one. Try again in a few minutes or switch modes.</div>
+      </section>
+
+      <section id="card">
+        <h2>Reading a coin card</h2>
+        <p>Every coin gets a card. Read it top to bottom: the most important information comes first.</p>
+        <div class="anatomy">
+          <div class="demo" aria-label="Example coin card with numbered parts">
+            <div class="row">
+              <div class="ico"></div>
+              <div style="flex:1;min-width:0">
+                <div class="row" style="gap:6px"><span class="pin">1</span><span class="sym">$PAWS</span><span class="copy">⧉ Copy CA</span></div>
+                <div class="nm">Pixel Pup · SOL · 3.2h · pump.fun</div>
+              </div>
+              <span class="pin">2</span><span class="verdict">PASS</span><span class="grade">B</span>
+            </div>
+            <div class="box"><div class="h"><span><span class="pin">3</span>Thesis</span><span class="tag v">animal</span></div>
+              <div>“A pixel dog that paints every holder's portrait.”</div>
+              <div class="muted" style="font-size:11px">The project's own description · picked by Jev (72%) · unverified claim</div></div>
+            <div class="box"><span class="pin">4</span><b>Jev decision</b> <span class="muted">· B 45% · A 38% · C 12%</span>
+              <div class="probs"><i style="width:38%;background:var(--gA)"></i><i style="width:45%;background:var(--gB)"></i><i style="width:12%;background:var(--gC)"></i><i style="width:5%;background:var(--gD)"></i></div>
+              <div class="muted">tie-break: Jev split B 45% / A 38%; rules evidence says B → B</div></div>
+            <div class="box"><div class="h"><span><span class="pin">5</span>What we found</span></div>
+              <ul class="found"><li>The top 10 wallets hold 16.2% of the supply (excluding the pool). Supply is fairly spread out.</li><li class="n">The creator holds 0.4% now, and this is their first known launch.</li><li class="a">RugCheck flags linked insider wallets holding 2.1%.</li></ul></div>
+            <div class="row" style="align-items:flex-start"><span class="pin">6</span>
+              <div class="metrics" style="flex:1"><div class="m"><div class="k">Mcap</div>$84.2K</div><div class="m"><div class="k">Liquidity</div>$21.5K</div><div class="m"><div class="k">Vol 24h</div>$312K</div><div class="m"><div class="k">Trades 1h</div>612 <span class="up">+88</span></div></div></div>
+            <div class="muted" style="font-size:12px">5m <span class="up">+4%</span> · 1h <span class="up">+22%</span> · 6h <span class="up">+61%</span> · 24h –</div>
+            <div class="row" style="flex-wrap:wrap;gap:5px"><span class="pin">7</span><span class="tag b">RUNNING</span><span class="tag">heat: hot</span><span class="tag">trend: growing</span><span class="tag">lore: solid</span><span class="tag">seen 3× · 40m</span></div>
+            <div class="row" style="align-items:flex-start"><span class="pin">8</span>
+              <div class="pillars" style="flex:1"><span>Security</span><div class="pbar"><i style="width:94%"></i></div><span>33/35</span><span>Holders</span><div class="pbar"><i style="width:76%"></i></div><span>19/25</span><span>Exit depth</span><div class="pbar"><i style="width:73%"></i></div><span>11/15</span><span>Structure</span><div class="pbar"><i style="width:100%"></i></div><span>5/5</span><span>Activity</span><div class="pbar"><i style="width:70%"></i></div><span>14/20</span></div></div>
+            <div class="row" style="flex-wrap:wrap;gap:10px;font-size:12px"><span class="pin">9</span><a>DexScreener</a><a>Bubblemaps ✓</a><a>RugCheck</a><span style="margin-left:auto" class="muted">☆ ⊘</span><span class="pin">10</span></div>
+          </div>
+          <ol class="legend">
+            <li><span class="pin">1</span><div><b class="lt">Ticker and Copy CA</b><span class="d">The coin's name, chain, age and launchpad. <b>Copy CA</b> copies the contract address in one tap, ready to paste into a wallet or another tool.</span></div></li>
+            <li><span class="pin">2</span><div><b class="lt">Verdict and grade</b><span class="d">The verdict (PASS, CAUTION, FAIL, UNKNOWN) is about <i>security only</i>. The grade (A to F) weighs everything. <a href="#grades">What they mean</a>.</span></div></li>
+            <li><span class="pin">3</span><div><b class="lt">Thesis</b><span class="d">What the coin says it's about, quoted word for word from its description or an X post. Jev picks the best sentence and tags a category. It's the project's claim, not a fact.</span></div></li>
+            <li><span class="pin">4</span><div><b class="lt">Jev decision</b><span class="d">Jev's grade probabilities. The colored bar shows how sure Jev is. When it's a close call, a line explains how the tie was broken.</span></div></li>
+            <li><span class="pin">5</span><div><b class="lt">What we found</b><span class="d">Plain-English findings about holders, the creator, insiders and liquidity. Green dots are reassuring, amber means caution, red means risk.</span></div></li>
+            <li><span class="pin">6</span><div><b class="lt">Market numbers</b><span class="d">Market cap, liquidity (how much money is available for selling), volume and trades. Price changes show "–" for windows older than the coin itself.</span></div></li>
+            <li><span class="pin">7</span><div><b class="lt">Tags</b><span class="d">Quick reads like phase, heat and trend. Hover or long-press for details. <a href="#reads">All tags explained</a>.</span></div></li>
+            <li><span class="pin">8</span><div><b class="lt">Evidence bars</b><span class="d">The rules-based score behind the grade, out of 100. Security and holders count most.</span></div></li>
+            <li><span class="pin">9</span><div><b class="lt">Links and details</b><span class="d">Open the chart, the wallet-cluster map or the security report. The dropdowns on the card hold the raw numbers.</span></div></li>
+            <li><span class="pin">10</span><div><b class="lt">Star and mute</b><span class="d">☆ adds the coin to your Watchlist. ⊘ hides it forever. Both are saved in your browser.</span></div></li>
+          </ol>
+        </div>
+      </section>
+
+      <section id="grades">
+        <h2>Grades and verdicts</h2>
+        <h3>Verdict: is it safe to trade?</h3>
+        <div class="tablewrap"><table>
+          <tr><th>Verdict</th><th>Meaning</th></tr>
+          <tr><td><span class="tag g">PASS</span></td><td>No serious security problems found.</td></tr>
+          <tr><td><span class="tag a">CAUTION</span></td><td>Some warning signs, such as concentrated holders or partly unlocked liquidity. Nothing that directly stops you selling.</td></tr>
+          <tr><td><span class="tag r">FAIL</span></td><td>A serious problem, like a honeypot (you can't sell), high sell tax, or the creator being able to mint or freeze tokens. FAIL coins are hidden from the results.</td></tr>
+          <tr><td><span class="tag">UNKNOWN</span></td><td>No security checker covers this coin's chain, or the check failed. Unknown is <b>never</b> treated as a pass.</td></tr>
+        </table></div>
+        <h3>Grade: how strong is the evidence overall?</h3>
+        <div class="tablewrap"><table>
+          <tr><th>Grade</th><th>Meaning</th></tr>
+          <tr><td><span class="g gA">A</span></td><td>Strong evidence across security, holders and liquidity, plus real activity.</td></tr>
+          <tr><td><span class="g gB">B</span></td><td>Mostly clean, with a minor gap or one moderate weakness.</td></tr>
+          <tr><td><span class="g gC">C</span></td><td>Mixed evidence, or capped by a safety rule (see below).</td></tr>
+          <tr><td><span class="g gD">D</span></td><td>Several weaknesses, or a security FAIL.</td></tr>
+          <tr><td><span class="g gF">F</span></td><td>Serious red flags.</td></tr>
+        </table></div>
+        <p>About 80% of the grade comes from risk evidence (security, holder spread, how easy it is to sell, and whether the data checks out) and 20% from activity. For coins under a day old, activity means story and volume; for older coins it means crowd trend and volume.</p>
+        <h3>How Jev decides, and how close calls are settled</h3>
+        <p>Jev gives a probability for each grade. If one grade clearly leads, that's the grade. If the top two are within 10 points (say A 35% and B 35%), the scanner picks whichever one is closer to what the hard evidence says, and if that's still even, it takes the <b>lower</b> grade. If Jev is unsure overall, the scanner takes the more cautious answer. The card always tells you when this happened.</p>
+        <h3>Safety caps: why a coin shows "Capped at C"</h3>
+        <p>Some problems hold a coin at C or lower, whatever Jev says:</p>
+        <ul>
+          <li>The security verdict is UNKNOWN.</li>
+          <li>The coin is under a day old and its liquidity is thin or not locked.</li>
+          <li>Another coin with the same ticker has deeper liquidity (copycats lose the name).</li>
+          <li>The creator has launched 5 or more other coins (a serial deployer).</li>
+          <li>The pump.fun bonding curve couldn't be verified on-chain.</li>
+          <li>Only a partial security report was available.</li>
+        </ul>
+        <p>A security FAIL caps the grade at D, and hard failures like honeypots always force FAIL.</p>
+      </section>
+
+      <section id="reads">
+        <h2>The small tags</h2>
+        <p>These are quick reads. Each is labeled "not a prediction" for a reason: they describe what's happening now, not what happens next.</p>
+        <dl class="gloss">
+          <dt>Phase</dt><dd><b>EARLY</b>: just launched or hasn't moved yet. <b>RUNNING</b>: rising with growing trading. <b>EXTENDED</b>: already ran a lot and may be cooling. <b>QUIET</b>: little activity. A * means it was a close call.</dd>
+          <dt>Heat</dt><dd>Short-term price momentum, from cold to on fire.</dd>
+          <dt>Trend</dt><dd>How the crowd is trading: number of trades, whether it's speeding up, and trade sizes. From dead to surging.</dd>
+          <dt>Lore</dt><dd>How much story, branding and social presence the coin has. From none to distinctive.</dd>
+          <dt>Attention ahead / priced in</dt><dd>Compares how much attention a coin gets with its market cap, relative to the other coins in the scan.</dd>
+          <dt>Rebound shape</dt><dd>A big drop followed by a recovery with buyers returning. A pattern, not a promise.</dd>
+          <dt>Setup</dt><dd>Price holding in a tight range while trading and buying pick up.</dd>
+          <dt>X: organic / mixed / bot or paid / silence</dt><dd>What posts about the coin on X look like. Only shown when the X layer is on.</dd>
+          <dt>Curve 63% · 48 SOL</dt><dd>For pump.fun coins still on their launch curve: how much of the curve has sold, and how much SOL it has raised, read directly from the blockchain.</dd>
+          <dt>Graduated</dt><dd>The coin finished its pump.fun curve and moved to a regular trading pool.</dd>
+          <dt>Seen 3× · 40m</dt><dd>How many of your scans have found this coin, and how long ago it first appeared.</dd>
+          <dt>+12% since last scan</dt><dd>Market cap change since your previous scan.</dd>
+          <dt>PAIR GONE</dt><dd>The trading pair disappeared on refresh. Often a sign the liquidity was pulled.</dd>
+        </dl>
+      </section>
+
+      <section id="modes">
+        <h2>Scan modes</h2>
+        <p>Each mode looks for a different kind of coin and remembers its own filter settings.</p>
+        <div class="tablewrap"><table>
+          <tr><th>Mode</th><th>What it finds</th><th>Good for</th></tr>
+          <tr><td><b>Default scan</b></td><td>$10K–$5M market cap, up to 7 days old</td><td>A balanced look at what's active</td></tr>
+          <tr><td><b>Early hunt</b></td><td>Under 24 hours old, up to $100K market cap</td><td>Very new, very small coins (highest risk)</td></tr>
+          <tr><td><b>Low cap</b></td><td>$5K–$150K market cap</td><td>Small coins of any age up to a week</td></tr>
+          <tr><td><b>Fresh</b></td><td>Launched within the last hour</td><td>Watching launches as they happen</td></tr>
+          <tr><td><b>Recovery</b></td><td>$300K–$1M market cap, up to 7 days, trending and high-volume pools</td><td>Established coins that have held up</td></tr>
+        </table></div>
+        <p class="muted">To stay within data-provider limits, each scan uses 5 of the market-data feeds and rotates the rest, so consecutive scans cover more ground. The status line says which feeds ran.</p>
+      </section>
+
+      <section id="filters">
+        <h2>Filters and strict mode</h2>
+        <p><b>Filters</b> (tap "Filters" on a phone) let you set market cap, liquidity, age and minimum trades. Changes apply right away. <b>Reset mode</b> restores the mode's defaults.</p>
+        <p><b>Strict mode</b> is on by default and shows only A and B grades. Turn it off to see everything that passed security, including C and D coins and why they were capped.</p>
+        <h3>The funnel line</h3>
+        <p><code>160 fetched → 158 live pairs → 31 met filters → 25 passed → 4 shown</code></p>
+        <p>Read it left to right: coins found, coins actually trading, coins matching your filters, coins that didn't FAIL security, and coins on screen after strict mode and search.</p>
+      </section>
+
+      <section id="tools">
+        <h2>Other tools</h2>
+        <dl class="gloss">
+          <dt>Paste a contract address</dt><dd>Check any single coin on any chain. It's shown at the top regardless of filters. <b>Recheck</b> runs it again.</dd>
+          <dt>Refresh</dt><dd>Re-pulls market data for every coin on screen without a full scan, and flags coins whose pair is gone.</dd>
+          <dt>Narrative radar</dt><dd>Words shared by 3 or more coins in the scan: a quick view of the current themes. Tap one to filter the list.</dd>
+          <dt>Watchlist tab</dt><dd>Coins you've starred. <b>Check now</b> refreshes one.</dd>
+          <dt>Outcome log tab</dt><dd>Every A or B coin the scanner has shown you, with its market cap then and now. It's the honest scoreboard: dead coins stay in and count as 0×.</dd>
+          <dt>Copy results as JSON</dt><dd>Copies everything on screen in a structured format, handy for notes, spreadsheets or pasting into an AI chat.</dd>
+          <dt>Settings</dt><dd>Your Worker URL (what connects Jev), the X layer on/off switch, how many coins Jev looks at per scan, and buttons to clear your memory, unmute coins or clear the log.</dd>
+        </dl>
+      </section>
+
+      <section id="devices">
+        <h2>Using it on a phone or with an AI agent</h2>
+        <h3>On a phone or another browser</h3>
+        <p>On a device that's already set up, tap <b>Copy setup link</b> and send the link to yourself. Open it once on the new device. It saves the connection and starts a scan. After that, the normal address works there too.</p>
+        <p class="muted">Without the setup, cards say "Rules-only": the scanner still works, just without Jev.</p>
+        <h3>With an AI agent</h3>
+        <p>An agent that can use a web browser can open the setup link, wait for the scan to finish, and read the results as structured data. The steps are in the project README. An agent without a browser can use <b>Copy results as JSON</b> pasted into its chat.</p>
+        <div class="callout warn"><b>Share the setup link carefully.</b> Anyone who uses it spends your Jev and X credits (limited to 30 requests a minute per person). A setup link can't replace a connection that's already saved, so a bad link can't take over your scanner.</div>
+      </section>
+
+      <section id="faq">
+        <h2>FAQ</h2>
+        <details class="faq"><summary>Is this financial advice?</summary><p>No. The scanner ranks evidence and flags risks. It never says buy or sell, and a good grade doesn't mean the price will go up.</p></details>
+        <details class="faq"><summary>Why does it say "Nothing met the bar"?</summary><p>Strict mode shows only A and B grades, and most new coins don't qualify. That's the point: it saves you from looking at weak launches. Try another mode, wait a few minutes, or switch strict mode off.</p></details>
+        <details class="faq"><summary>What does "Rules-only" mean on a card?</summary><p>Jev wasn't consulted for that coin, and the card says why: the device isn't set up (see <a href="#devices">Phone and AI agents</a>), the coin failed security, or it was outside the top coins sent to Jev. The grade then comes from the rules alone.</p></details>
+        <details class="faq"><summary>Why is a coin "Capped at C"?</summary><p>A safety rule applied, such as an unknown security verdict, thin liquidity on a new coin, or a copycat ticker. The card lists the exact reason. See <a href="#grades">Safety caps</a>.</p></details>
+        <details class="faq"><summary>Why do some price changes show "–"?</summary><p>The coin is younger than that time window. A 40-minute-old coin has no real 6-hour or 24-hour change, so those are left blank instead of repeating the 1-hour number.</p></details>
+        <details class="faq"><summary>Why is the verdict UNKNOWN?</summary><p>No free security checker covers that chain, or the checker had no data yet. Unknown is never counted as safe, and it caps the grade at C.</p></details>
+        <details class="faq"><summary>Why does a scan take about 20 seconds?</summary><p>The scanner checks security for dozens of coins, reads blockchain data and asks Jev about each candidate, all while staying within free data-provider limits.</p></details>
+        <details class="faq"><summary>Is the thesis true?</summary><p>Not necessarily. It's the project's own words (or an X post), picked because it best explains what the coin is about. Treat claims about partnerships, apps or rewards as unverified.</p></details>
+        <details class="faq"><summary>Where is my data stored?</summary><p>Your stars, mutes, scan memory and outcome log live only in this browser. Clearing your browser data or using a private window starts fresh.</p></details>
+      </section>
+    </main>
+  </div>
+</div>
+<footer><div class="wrap">Grades rank evidence, not outcomes. An A-grade memecoin is still a lottery ticket. Nothing here is a buy rating, a price prediction, or financial advice. · <a href="./">Back to the scanner</a></div></footer>
+</body>
+</html>
