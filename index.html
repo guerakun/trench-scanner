@@ -354,6 +354,18 @@ const MODES = {
   recovery: { label: "Recovery", hint: "$300K–1M, ≤7d", filters: { minMcap: 300000, maxMcap: 1000000, minLiq: 25000, maxAge: 168, minTx: 20 } },
 };
 
+// Friendly name for a GeckoTerminal feed path, e.g. "Solana trending" or "four.meme".
+function feedLabel(path) {
+  const net = { solana: "Solana", bsc: "BSC", robinhood: "Robinhood" }[path.split("/")[2]] || path.split("/")[2];
+  const dex = path.match(/\/dexes\/([^/]+)\//);
+  if (dex) return { "pump-fun": "pump.fun", "four-meme": "four.meme", stonkfun: "stonkfun" }[dex[1]] || dex[1];
+  if (path.includes("new_pools")) return net + " new pools";
+  if (path.includes("trending")) return net + " trending";
+  if (path.includes("volume")) return net + " top volume" + (/page=2/.test(path) ? " (p2)" : "");
+  if (path.includes("tx_count")) return net + " most trades";
+  return net;
+}
+
 // GeckoTerminal calls per mode, in priority order (GT allows roughly 10–30/min).
 function gtPlan(mode) {
   const newP = (n) => `/networks/${n}/new_pools?include=base_token&page=1`;
@@ -518,7 +530,7 @@ async function discover(mode, progress) {
   const pick = rest.length ? [0, 1].map((i) => rest[(rot + i) % rest.length]).filter((v, i, a) => a.indexOf(v) === i) : [];
   const plan = [...core, ...pick];
   const rots = LS.get("gtRot", {}); rots[mode] = (rot + pick.length) % Math.max(1, rest.length); LS.set("gtRot", rots);
-  S.gtNote = `GeckoTerminal: ${plan.length} of ${full.length} feeds this scan (${pick.map((p) => p.split("?")[0].replace("/networks/", "").replace("/pools", "")).join(", ") || "new pools"} rotating in)`;
+  S.gtNote = `Market feeds: ${plan.length} of ${full.length} this scan (new pools on Solana, BSC, Robinhood${pick.length ? " + " + pick.map(feedLabel).join(", ") : ""}; others rotate in on the next scans)`;
   const total = 3 + plan.length; let done = 0;
   const tick = () => progress(++done / total, `Discovering… ${done}/${total} feeds`);
 

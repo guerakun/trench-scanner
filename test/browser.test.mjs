@@ -204,6 +204,7 @@ try {
   await page.click("#scanBtn"); await waitScan(page);
   const st = await page.textContent("#status");
   ok("Jev engine status", /Jev is the decision engine/.test(st), st);
+  ok("status names the rotating feeds in plain words", /Market feeds: 5 of 13 this scan \(new pools on Solana, BSC, Robinhood \+ [a-zA-Z.]/.test(st), st);
   const gradesStrict = await page.$$eval("#list .card .grade", (e) => e.map((x) => x.textContent));
   ok("strict shows only A/B", gradesStrict.every((g) => g === "A" || g === "B"), gradesStrict.join(""));
   await page.screenshot({ path: path.join(OUT, "desktop-strict.png"), fullPage: false });
