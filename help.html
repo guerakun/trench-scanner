@@ -117,16 +117,53 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:13px;paddin
   dl.gloss{grid-template-columns:1fr;gap:2px 0}
   dl.gloss dd{margin-bottom:10px}
 }
+
+/* ---- shared site navigation (identical on every page) ---- */
+.skip{position:absolute;left:-9999px;top:8px;z-index:100;background:var(--green);color:#06120c;padding:8px 12px;border-radius:8px;font-weight:600}
+.skip:focus{left:16px}
+.sitenav{border-bottom:1px solid var(--line);background:var(--bg)}
+.sitenav-in{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:54px}
+.logo{display:flex;align-items:center;gap:9px;color:var(--text);font-weight:700;font-size:15px;letter-spacing:.2px}
+.logo:hover{text-decoration:none}
+.logo svg{width:28px;height:28px;flex:none}
+.navlinks{display:flex;gap:4px}
+.navlinks a{color:var(--muted);padding:7px 12px;border-radius:8px;font-size:14px;font-weight:500;white-space:nowrap}
+.navlinks a:hover{color:var(--text);background:var(--card2);text-decoration:none}
+.navlinks a[aria-current="page"]{color:var(--text);background:var(--card2);box-shadow:inset 0 -2px 0 var(--green)}
+.sitenav a:focus-visible,.sitefoot a:focus-visible,.qhelp:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.sitefoot{border-top:1px solid var(--line);margin-top:32px;padding:18px 0 28px;color:var(--muted);font-size:12px}
+.footlinks{display:flex;flex-wrap:wrap;gap:6px 18px;margin-bottom:10px;font-size:13px}
+.footlinks a{color:var(--muted)} .footlinks a:hover{color:var(--text)}
+.sitefoot p{margin:4px 0}
+.logo span{white-space:nowrap}
+@media (max-width:420px){.logo{font-size:14px;gap:7px}.navlinks a{padding:7px 9px;font-size:13.5px}}
+@media (max-width:340px){.logo span{display:none}}
+nav.toc a[aria-current="true"]{color:var(--text);box-shadow:inset 2px 0 0 var(--green);margin-left:-15px;padding-left:13px}
+.totop{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));width:44px;height:44px;border-radius:50%;background:var(--card2);border:1px solid var(--line2);color:var(--text);font-size:20px;display:grid;place-items:center;opacity:0;pointer-events:none;transition:opacity .2s;cursor:pointer;z-index:30}
+.totop.on{opacity:1;pointer-events:auto}
+.totop:hover{border-color:var(--green)}
+.cta{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:14px 0}
+.cta p{margin:0}
+@media (max-width:860px){nav.toc a[aria-current="true"]{box-shadow:none;margin-left:0;padding-left:0;color:var(--green)}}
 </style>
 </head>
 <body>
+<a class="skip" href="#main">Skip to content</a>
+<nav class="sitenav" aria-label="Site">
+  <div class="wrap sitenav-in">
+    <a class="logo" href="./" aria-label="Trench Scanner home" data-back-to-scanner><svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#141925"/><path d="M12 44 L26 26 L36 36 L52 16" stroke="#59d499" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Trench Scanner</span></a>
+    <div class="navlinks">
+      <a href="./" data-back-to-scanner>Scanner</a>
+      <a href="help.html" aria-current="page">How to use</a>
+    </div>
+  </div>
+</nav>
 <div class="wrap">
   <header class="top">
     <div class="brand">
       <h1>How to use Trench Scanner</h1>
       <small>A five-minute guide. No crypto jargon required.</small>
     </div>
-    <a class="btn primary" href="./">Open the scanner</a>
   </header>
 
   <div class="layout">
@@ -144,7 +181,7 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:13px;paddin
       <a href="#faq">FAQ</a>
     </nav>
 
-    <main>
+    <main id="main">
       <section id="what">
         <h2>What it is</h2>
         <p class="lead">Trench Scanner looks at brand-new memecoins and sorts out which ones have <b>better evidence of being safe and well-built</b>, and which ones show warning signs.</p>
@@ -159,6 +196,7 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:13px;paddin
           <div class="step"><h3>Tap Scan</h3><p>Wait about 20 seconds. The green bar shows progress.</p></div>
           <div class="step"><h3>Read the cards</h3><p>Start with the grade and verdict, then the <b>Thesis</b> and <b>What we found</b>. Tap a coin's <b>Copy CA</b> to grab its address.</p></div>
         </div>
+        <div class="cta"><p><b>That's all you need to start.</b> The rest of this page explains the details.</p><a class="btn primary" href="./" data-back-to-scanner>Open the scanner</a></div>
         <div class="callout info"><b>Seeing "Nothing met the bar"?</b> That's normal and it's the tool working. Strict mode only shows A and B grades, and most launches don't earn one. Try again in a few minutes or switch modes.</div>
       </section>
 
@@ -318,10 +356,45 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:13px;paddin
         <details class="faq"><summary>Why does a scan take about 20 seconds?</summary><p>The scanner checks security for dozens of coins, reads blockchain data and asks Jev about each candidate, all while staying within free data-provider limits.</p></details>
         <details class="faq"><summary>Is the thesis true?</summary><p>Not necessarily. It's the project's own words (or an X post), picked because it best explains what the coin is about. Treat claims about partnerships, apps or rewards as unverified.</p></details>
         <details class="faq"><summary>Where is my data stored?</summary><p>Your stars, mutes, scan memory and outcome log live only in this browser. Clearing your browser data or using a private window starts fresh.</p></details>
+        <div class="cta"><p><b>Ready?</b> Your last scan is still there if you came from the scanner.</p><a class="btn primary" href="./" data-back-to-scanner>Back to the scanner</a></div>
       </section>
     </main>
   </div>
 </div>
-<footer><div class="wrap">Grades rank evidence, not outcomes. An A-grade memecoin is still a lottery ticket. Nothing here is a buy rating, a price prediction, or financial advice. · <a href="./">Back to the scanner</a></div></footer>
+<footer class="sitefoot"><div class="wrap">
+    <nav class="footlinks" aria-label="Footer">
+      <a href="./" data-back-to-scanner>Scanner</a>
+      <a href="help.html">How to use</a>
+      <a href="help.html#faq">FAQ</a>
+      <a href="https://github.com/guerakun/trench-scanner" rel="noopener">Source on GitHub</a>
+    </nav>
+    <p>Grades rank evidence, not outcomes. An A-grade memecoin is still a lottery ticket. Nothing here is a buy rating, a price prediction, or financial advice.</p>
+</div></footer>
+<button class="totop" id="totop" type="button" aria-label="Back to top" title="Back to top">↑</button>
+<script>
+(() => {
+// Links back to the scanner use the browser's Back when you came from it, so your results and scroll position stay put.
+document.querySelectorAll("a[data-back-to-scanner]").forEach((a) => a.addEventListener("click", (e) => {
+  try {
+    const r = new URL(document.referrer);
+    if (r.origin === location.origin && /\/trench-scanner\/(index\.html)?$/.test(r.pathname) && history.length > 1) { e.preventDefault(); history.back(); }
+  } catch { /* no referrer: follow the normal link */ }
+}));
+// Back-to-top button appears after you scroll down.
+const toTop = document.getElementById("totop");
+addEventListener("scroll", () => toTop.classList.toggle("on", scrollY > 700), { passive: true });
+toTop.addEventListener("click", () => { scrollTo({ top: 0 }); document.querySelector(".skip").focus({ preventScroll: true }); });
+// Table of contents highlights the section you're reading.
+const links = new Map([...document.querySelectorAll("nav.toc a")].map((a) => [a.getAttribute("href").slice(1), a]));
+const seen = new Map();
+const io = new IntersectionObserver((entries) => {
+  for (const en of entries) seen.set(en.target.id, en.isIntersecting ? en.boundingClientRect.top : null);
+  const visible = [...seen.entries()].filter(([, t]) => t !== null).sort((a, b) => a[1] - b[1]);
+  const id = visible.length ? visible[0][0] : null;
+  if (id) links.forEach((a, k) => (k === id ? a.setAttribute("aria-current", "true") : a.removeAttribute("aria-current")));
+}, { rootMargin: "-10% 0px -60% 0px" });
+document.querySelectorAll("main section[id]").forEach((sec) => io.observe(sec));
+})();
+</script>
 </body>
 </html>

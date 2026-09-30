@@ -164,19 +164,53 @@ footer p{margin:4px 0}
   .metrics{grid-template-columns:repeat(2,1fr)}
   header.top .btn{padding:7px 11px}
 }
+
+/* ---- shared site navigation (identical on every page) ---- */
+.skip{position:absolute;left:-9999px;top:8px;z-index:100;background:var(--green);color:#06120c;padding:8px 12px;border-radius:8px;font-weight:600}
+.skip:focus{left:16px}
+.sitenav{border-bottom:1px solid var(--line);background:var(--bg)}
+.sitenav-in{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:54px}
+.logo{display:flex;align-items:center;gap:9px;color:var(--text);font-weight:700;font-size:15px;letter-spacing:.2px}
+.logo:hover{text-decoration:none}
+.logo svg{width:28px;height:28px;flex:none}
+.navlinks{display:flex;gap:4px}
+.navlinks a{color:var(--muted);padding:7px 12px;border-radius:8px;font-size:14px;font-weight:500;white-space:nowrap}
+.navlinks a:hover{color:var(--text);background:var(--card2);text-decoration:none}
+.navlinks a[aria-current="page"]{color:var(--text);background:var(--card2);box-shadow:inset 0 -2px 0 var(--green)}
+.sitenav a:focus-visible,.sitefoot a:focus-visible,.qhelp:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.sitefoot{border-top:1px solid var(--line);margin-top:32px;padding:18px 0 28px;color:var(--muted);font-size:12px}
+.footlinks{display:flex;flex-wrap:wrap;gap:6px 18px;margin-bottom:10px;font-size:13px}
+.footlinks a{color:var(--muted)} .footlinks a:hover{color:var(--text)}
+.sitefoot p{margin:4px 0}
+.logo span{white-space:nowrap}
+@media (max-width:420px){.logo{font-size:14px;gap:7px}.navlinks a{padding:7px 9px;font-size:13.5px}}
+@media (max-width:340px){.logo span{display:none}}
+.qhelp{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;border:1px solid var(--line2);color:var(--muted);font:700 11px system-ui,sans-serif;text-decoration:none;flex:none;vertical-align:middle}
+.frow .qhelp{align-self:center}
+.qhelp:hover{color:var(--text);border-color:var(--blue);text-decoration:none}
+header.top h1{font-size:20px}
 </style>
 </head>
 <body>
+<a class="skip" href="#main">Skip to content</a>
+<nav class="sitenav" aria-label="Site">
+  <div class="wrap sitenav-in">
+    <a class="logo" href="./" aria-label="Trench Scanner home"><svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#141925"/><path d="M12 44 L26 26 L36 36 L52 16" stroke="#59d499" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Trench Scanner</span></a>
+    <div class="navlinks">
+      <a href="./" aria-current="page">Scanner</a>
+      <a href="help.html">How to use</a>
+    </div>
+  </div>
+</nav>
 <div class="wrap">
   <header class="top">
     <div class="brand">
-      <h1>Trench Scanner</h1>
-      <small>Screens memecoin launches for evidence and safety. Not buy signals. Not predictions.</small>
+      <h1>Memecoin launch scanner</h1>
+      <small>Screens launches for evidence and safety. Not buy signals. Not predictions. <a href="help.html#start">New here?</a></small>
     </div>
     <button class="btn primary" id="scanBtn">Scan</button>
     <button class="btn" id="refreshBtn" title="Re-pull market data for every coin on screen">Refresh</button>
     <button class="btn" id="settingsBtn" title="Worker, Jev, X layer, RPC">Settings</button>
-    <a class="btn" href="help.html" title="How to use the scanner">How to use</a>
   </header>
   <nav class="modes" id="modes"></nav>
 </div>
@@ -185,6 +219,7 @@ footer p{margin:4px 0}
   <div class="wrap">
     <div class="frow">
       <label class="toggle strict" id="strictWrap" title="Only A and B grades are shown"><input type="checkbox" id="strict"> Strict (A/B only)</label>
+      <a class="qhelp" href="help.html#filters" aria-label="Help: filters and strict mode" title="What do the filters and strict mode do?">?</a>
       <div class="f"><select id="fChain" aria-label="Chain">
         <option value="all">All chains</option><option value="solana">Solana</option><option value="bsc">BSC</option><option value="robinhood">Robinhood</option><option value="evm">Other EVM</option>
       </select></div>
@@ -202,7 +237,7 @@ footer p{margin:4px 0}
   </div>
 </div>
 
-<main class="wrap">
+<main class="wrap" id="main">
   <div class="checkbox">
     <input id="caInput" placeholder="Paste a contract address (any chain) to check it" autocomplete="off" spellcheck="false" aria-label="Contract address">
     <button class="btn" id="caBtn">Check</button>
@@ -222,17 +257,23 @@ footer p{margin:4px 0}
   <section id="tab-watch" hidden><div class="list" id="watchList"></div></section>
   <section id="tab-log" hidden></section>
 
-  <footer>
+  <footer class="sitefoot">
+    <nav class="footlinks" aria-label="Footer">
+      <a href="./" data-back-to-scanner>Scanner</a>
+      <a href="help.html">How to use</a>
+      <a href="help.html#faq">FAQ</a>
+      <a href="https://github.com/guerakun/trench-scanner" rel="noopener">Source on GitHub</a>
+    </nav>
     <p><b>Grades rank evidence, not outcomes.</b> An A-grade memecoin is still a lottery ticket. Nothing here is a buy rating, a price prediction, or financial advice.</p>
     <p>Verdict, grade and category calls come from Jev (TypeSafe) with its probabilities shown on each card. When Jev's top choices are close, the page breaks the tie with the rules-based evidence and, if that's still unclear, takes the more cautious answer. Hard caps and hard security failures are always applied by code. Every read (heat, trend, lore, gap, phase, rebound, setup) is a heuristic or a model judgment, labeled "not a prediction".</p>
-    <p>Data: DexScreener, GeckoTerminal, RugCheck, GoPlus, Solana RPC (PublicNode by default), Bubblemaps; optional X data via your own Worker. Chains without a security checker show UNKNOWN, never a pass. Scan memory lives only in this browser. · <a href="help.html">How to use this site</a></p>
+    <p>Data: DexScreener, GeckoTerminal, RugCheck, GoPlus, Solana RPC (PublicNode by default), Bubblemaps; optional X data via your own Worker. Chains without a security checker show UNKNOWN, never a pass. Scan memory lives only in this browser.</p>
   </footer>
 </main>
 
 <dialog id="settings">
   <form method="dialog" class="dlg">
     <h2>Settings</h2>
-    <p>Keys never live in this page. Jev and the X layer run through your own Cloudflare Worker, which holds the keys as secrets.</p>
+    <p>Keys never live in this page. Jev and the X layer run through your own Cloudflare Worker, which holds the keys as secrets. <a href="help.html#devices">Setting up another device?</a></p>
     <div class="f"><label for="sWorker">Worker URL</label><input id="sWorker" placeholder="https://trench-scanner-proxy.you.workers.dev" autocomplete="off" spellcheck="false"></div>
     <div class="frow"><button type="button" class="btn small" id="sTest">Test Worker</button><span class="health" id="sHealth"></span></div>
     <label class="toggle"><input type="checkbox" id="sJev"> Use Jev as the decision engine</label>
@@ -1669,11 +1710,11 @@ function renderFunnel() {
   const f = S.funnel;
   if (!f) { $("#funnel").innerHTML = ""; return; }
   const step = (n, l) => `<span><b>${n}</b> ${l}</span>`;
-  $("#funnel").innerHTML = [step(f.fetched, "fetched"), step(f.live, "live pairs"), step(f.met, "met filters"), `<span title="Security verdict is not FAIL. UNKNOWN coins count here but are capped at C.">${step(f.passed, "passed")}</span>`, step(f.shown, "shown")].join('<span class="arr">→</span>');
+  $("#funnel").innerHTML = [step(f.fetched, "fetched"), step(f.live, "live pairs"), step(f.met, "met filters"), `<span title="Security verdict is not FAIL. UNKNOWN coins count here but are capped at C.">${step(f.passed, "passed")}</span>`, step(f.shown, "shown")].join('<span class="arr">→</span>') + ` <a class="qhelp" href="help.html#filters" aria-label="Help: reading the funnel" title="How to read this line">?</a>`;
 }
 function renderRadar() {
   if (!S.metas.length) { $("#radar").innerHTML = ""; return; }
-  $("#radar").innerHTML = `<span class="lbl" title="Terms shared by 3+ coins in this scan. Heuristic.">Narrative radar</span>` +
+  $("#radar").innerHTML = `<span class="lbl" title="Terms shared by 3+ coins in this scan. Heuristic.">Narrative radar</span><a class="qhelp" href="help.html#tools" aria-label="Help: narrative radar" title="What is the narrative radar?">?</a>` +
     S.metas.map(([t, n]) => `<button class="chip ${S.meta === t ? "on" : ""}" data-meta="${esc(t)}">${esc(t)} <small>${n}</small></button>`).join("") +
     (S.meta ? `<button class="chip" data-meta="">clear ✕</button>` : "");
 }
@@ -1685,7 +1726,7 @@ function renderList() {
   if (!S.funnel) { $("#list").innerHTML = `<div class="empty"><h3>Ready when you are</h3>Pick a mode and press Scan. Nothing here is a buy signal.<br><a href="help.html">New here? Read the 5-minute guide</a></div>`; return; }
   if (!S.shown.length) {
     const why = settings.strict ? "Strict mode only shows A and B grades, and no coin earned one this scan." : "No coin passed the filters and security checks.";
-    $("#list").innerHTML = `<div class="empty"><h3>Nothing met the bar.</h3>${esc(why)} That's the screener doing its job: most launches don't deserve your attention.</div>`;
+    $("#list").innerHTML = `<div class="empty"><h3>Nothing met the bar.</h3>${esc(why)} That's the screener doing its job: most launches don't deserve your attention.<br><a href="help.html#faq">Why does this happen?</a></div>`;
     return;
   }
   $("#list").innerHTML = S.shown.map((c) => card(c)).join("");
@@ -1842,7 +1883,7 @@ function card(c, opt = {}) {
       </div>
     </div>
     <div class="ca" data-act="copy" data-ca="${esc(c.address)}" title="Click to copy">${esc(c.address)} ⧉</div>
-    <div class="np">Evidence ranking · not a prediction · not a buy rating</div>
+    <div class="np">Evidence ranking · not a prediction · not a buy rating · <a href="help.html#card">What does this card mean?</a></div>
   </article>`;
 }
 
@@ -1933,6 +1974,36 @@ function bind() {
 }
 function confirmClear() { const b = $("#sClearLog"); if (b.dataset.armed) { delete b.dataset.armed; b.textContent = "Clear outcome log"; return true; } b.dataset.armed = "1"; b.textContent = "Tap again to confirm"; return false; }
 
+// Scan snapshot (sessionStorage, this tab only): going to the guide and back keeps your results.
+const SNAP_KEY = "ts:snapshot";
+function saveSnapshot() {
+  try {
+    if (!S.live.length || S.busy) return;
+    const snap = { v: 1, t: S.scannedAt || Date.now(), mode: settings.mode, fetched: S.fetched, errors: S.errors, gtNote: S.gtNote,
+      live: S.live, metKeys: S.met.map((c) => c.key), checked: S.checked, metas: S.metas, meta: S.meta, jev: { ...jevStatus }, scrollY: window.scrollY, tab: S.tab };
+    sessionStorage.setItem(SNAP_KEY, JSON.stringify(snap, (k, v) => (v instanceof Set ? { __set: [...v] } : v)));
+  } catch { /* storage full or blocked: the next visit just starts fresh */ }
+}
+function restoreSnapshot() {
+  try {
+    const raw = sessionStorage.getItem(SNAP_KEY);
+    if (!raw) return false;
+    const snap = JSON.parse(raw, (k, v) => (v && typeof v === "object" && Array.isArray(v.__set) ? new Set(v.__set) : v));
+    if (snap.v !== 1 || Date.now() - snap.t > 30 * 60000 || snap.mode !== settings.mode) return false;
+    S.live = snap.live; S.fetched = snap.fetched; S.errors = snap.errors || []; S.gtNote = snap.gtNote; S.metas = snap.metas || []; S.meta = snap.meta || null; S.scannedAt = snap.t;
+    const keys = new Set(snap.metKeys); S.met = S.live.filter((c) => keys.has(c.key) && c.d);
+    S.checked = snap.checked && snap.checked.d ? snap.checked : null;
+    Object.assign(jevStatus, snap.jev || {});
+    finalize();
+    if (snap.tab && snap.tab !== "results") $(`.tab[data-tab="${snap.tab}"]`)?.click();
+    setStatus(`Showing your scan from ${new Date(snap.t).toLocaleTimeString()}. Press Scan for fresh data. · ${jevLine()}`, S.errors);
+    requestAnimationFrame(() => window.scrollTo(0, snap.scrollY || 0));
+    return true;
+  } catch { return false; }
+}
+window.addEventListener("pagehide", saveSnapshot);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") saveSnapshot(); });
+
 // Link parameters, so one link sets up a phone or an agent:
 //   ?worker=<url>  saves the Worker URL in this browser (then removed from the address bar)
 //   ?mode=early|lowcap|fresh|recovery|default   ?strict=0|1   ?auto=1 (scan on load)   ?ca=<address> (check on load)
@@ -1982,9 +2053,10 @@ function init() {
   if (!MODES[settings.mode]) settings.mode = "default";
   writeFilterInputs(); bind(); render();
   if (!workerBase()) setStatus("Press Scan to start. Jev is offline until you add your Worker URL in Settings, so grades will be rules-only.");
-  if (link.workerNote) setStatus(link.workerNote);
   if (link.ca) { $("#caInput").value = link.ca; checkCA(link.ca); }
   else if (link.auto) scan();
+  else restoreSnapshot();
+  if (link.workerNote) setStatus(link.workerNote); // a safety notice outranks the restore message
 }
 init();
 </script>

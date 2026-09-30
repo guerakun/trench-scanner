@@ -347,6 +347,34 @@ try {
   const missing = await page.evaluate(() => [...document.querySelectorAll('a[href^="#"]')].map((a) => a.getAttribute("href")).filter((h) => !document.querySelector(h)));
   ok("help page: every in-page link has a target", missing.length === 0, missing.join(","));
   await page.screenshot({ path: path.join(OUT, "help-mobile.png") });
+  ok("help page: nav marks How to use as current", (await page.getAttribute('.navlinks a[href="help.html"]', "aria-current")) === "page");
+  const qhelpTargets = await page.evaluate(() => [...document.querySelectorAll("section[id]")].map((x) => x.id));
+  await ctx.close();
+
+  // 3c) Navigation keeps your results: scan, open the guide, come back
+  ({ ctx, page } = await newPage({ width: 1280, height: 900 }));
+  await page.goto("http://localhost:8080/");
+  await page.evaluate((w) => { localStorage.setItem("ts:settings", JSON.stringify({ workerUrl: w, useJev: true, strict: false, mode: "default" })); localStorage.removeItem("ts:filters"); }, WORKER);
+  await page.reload();
+  ok("scanner nav marks Scanner as current", (await page.getAttribute('.navlinks a[href="./"]', "aria-current")) === "page");
+  const helpLinks = await page.evaluate(() => [...document.querySelectorAll('a[href^="help.html#"]')].map((a) => a.getAttribute("href").split("#")[1]));
+  await page.click("#scanBtn"); await waitScan(page);
+  const before = await page.$$eval("#list .card", (e) => e.map((x) => x.dataset.key));
+  const cardHelp = await page.evaluate(() => [...document.querySelectorAll('a[href^="help.html#"]')].map((a) => a.getAttribute("href").split("#")[1]));
+  ok("contextual ? links point at real guide sections", [...new Set([...helpLinks, ...cardHelp])].every((id) => qhelpTargets.includes(id)), [...new Set([...helpLinks, ...cardHelp])].join(","));
+  await page.click('.navlinks a[href="help.html"]');
+  await page.waitForURL(/help\.html/);
+  await page.click('.navlinks a[href="./"]');
+  await page.waitForURL((u) => !u.pathname.includes("help"));
+  await page.waitForFunction(() => document.querySelectorAll("#list .card").length > 0, null, { timeout: 15000 });
+  const after = await page.$$eval("#list .card", (e) => e.map((x) => x.dataset.key));
+  ok("results survive a trip to the guide and back", after.length === before.length && after.every((k, i) => k === before[i]), `${before.length} → ${after.length}`);
+  // fresh page load (not Back) restores from the snapshot and says so
+  await page.goto("http://localhost:8080/help.html");
+  await page.evaluate(() => { const a = document.querySelector('.cta a[data-back-to-scanner]'); a.removeAttribute("data-back-to-scanner"); a.click(); });
+  await page.waitForURL((u) => !u.pathname.includes("help"));
+  await page.waitForFunction(() => /Showing your scan from/.test(document.querySelector("#status").textContent), null, { timeout: 15000 });
+  ok("fresh load restores last scan with a clear note", (await page.$$eval("#list .card", (e) => e.length)) === before.length);
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("http://localhost:8080/help.html#card");
   await page.screenshot({ path: path.join(OUT, "help-desktop.png") });
