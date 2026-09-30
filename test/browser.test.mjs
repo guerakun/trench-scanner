@@ -189,7 +189,7 @@ try {
   await page.uncheck("#strict");
   await page.waitForTimeout(200);
   const decideTexts = await page.$$eval(".card .decide", (els) => els.map((e) => e.textContent));
-  ok("rules-only cards fall back to first description line", (await page.$$eval(".card .thesis", (e) => e.map((x) => x.textContent))).some((t) => /first line \(Jev not consulted\)/.test(t)));
+  ok("rules-only cards fall back to first description line", (await page.$$eval(".card .thesis", (e) => e.map((x) => x.textContent))).some((t) => /first line \(no Jev pick\)/.test(t)));
   ok("every card has a What we found block", (await page.$$eval("#list .card", (e) => e.every((x) => x.querySelector(".found li")))));
   ok("cards show rules-only decision", decideTexts.length > 0 && decideTexts.every((t) => t.includes("Rules-only")), decideTexts.length + " cards");
   await ctx.close();
