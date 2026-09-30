@@ -47,3 +47,29 @@ Without a Worker the screener still works, labeled **rules-only** on every card.
 node worker/test/worker.test.mjs      # Worker logic, network mocked
 node test/browser.test.mjs            # real Chromium, all APIs mocked (needs Playwright)
 ```
+
+## Using it on a phone, another browser, or with an AI agent
+
+Everything runs at **https://guerakun.github.io/trench-scanner/**. Each browser just needs your Worker URL once.
+
+**Setup link** (tap *Copy setup link* on the page to get it):
+
+```
+https://guerakun.github.io/trench-scanner/?worker=https%3A%2F%2Ftrench-scanner-proxy.guerakun.workers.dev&auto=1
+```
+
+Opening it saves the Worker URL in that browser, removes it from the address bar, and starts a scan.
+A link can set the Worker on a fresh browser but never silently replaces one that's already saved.
+
+Link options: `mode=default|early|lowcap|fresh|recovery`, `strict=0|1`, `auto=1` (scan on load), `ca=<address>` (check one coin on load).
+
+**For AI agents with a browser** (Claude in Chrome, Playwright, etc.):
+
+1. Open the setup link, optionally with `&mode=...` or `&ca=...`.
+2. Wait until `document.body.dataset.scanState === "done"`.
+3. Read `window.trenchResults`, or the JSON in `<script id="ts-results" type="application/json">`.
+   Each shown coin has grade, verdict, Jev probabilities, tie-break notes, caps, thesis, narrative, plain-language findings, market data and links.
+   *Copy results as JSON* on the page gives the same thing for pasting into a chat.
+
+Agents can't call the Worker directly: it only answers pages served from `guerakun.github.io`.
+Anyone you give the setup link to uses your Jev and X credits (rate-limited to 30 requests/minute per IP), so share it only with people and agents you trust.

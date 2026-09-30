@@ -125,7 +125,7 @@ function mockJev(state, idx) {
   };
 }
 
-const WORKER = "https://mock-worker.test";
+const WORKER = "https://mock.tester.workers.dev";
 const hits = {};
 async function route(r) {
   const req = r.request(); const u = new URL(req.url());
@@ -305,6 +305,23 @@ try {
   await page.click("#settingsBtn"); await page.click("#sTest"); await page.waitForTimeout(300);
   ok("settings health check", (await page.textContent("#sHealth")).includes("Jev ready"));
   await page.keyboard.press("Escape");
+  await ctx.close();
+
+  // 2b) One-link setup for phones/agents: ?worker=&auto=1, JSON results, no silent Worker override
+  ({ ctx, page } = await newPage({ width: 1000, height: 800 }));
+  await page.goto("http://localhost:8080/?worker=" + encodeURIComponent(WORKER) + "&auto=1&strict=0");
+  await page.waitForFunction(() => document.body.dataset.scanState === "done" && window.trenchResults?.funnel, null, { timeout: 90000 });
+  ok("?worker= saved and removed from address bar", (await page.evaluate(() => JSON.parse(localStorage.getItem("ts:settings")).workerUrl)) === WORKER && !page.url().includes("worker="), page.url());
+  const tr = await page.evaluate(() => window.trenchResults);
+  ok("auto=1 scans on load with Jev", tr.shown.length > 0 && /decision engine/.test(tr.jev), tr.jev);
+  ok("JSON results carry grade, thesis, findings, disclaimer", tr.shown.every((x) => x.grade && Array.isArray(x.findings) && "thesis" in x) && /lottery ticket/.test(tr.disclaimer));
+  const tag = await page.evaluate(() => JSON.parse(document.getElementById("ts-results").textContent).shown.length);
+  ok("embedded JSON block parses", tag === tr.shown.length);
+  await page.goto("http://localhost:8080/?worker=" + encodeURIComponent("https://evil.attacker.workers.dev"));
+  ok("link can't silently replace a saved Worker", (await page.evaluate(() => JSON.parse(localStorage.getItem("ts:settings")).workerUrl)) === WORKER && (await page.textContent("#status")).includes("was kept"));
+  await page.goto("http://localhost:8080/?ca=" + tokens[27].addr);
+  await page.waitForSelector("#checked .card", { timeout: 30000 });
+  ok("?ca= checks an address on load", (await page.evaluate(() => window.trenchResults.checked?.address)) === tokens[27].addr);
   await ctx.close();
 
   // 3) Mobile layout

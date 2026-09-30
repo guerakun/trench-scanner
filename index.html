@@ -206,6 +206,7 @@ footer p{margin:4px 0}
     <button class="btn" id="caBtn">Check</button>
   </div>
   <div class="funnel" id="funnel"></div>
+  <div class="frow" style="margin:2px 0 4px"><button class="btn small" id="copyJson" title="Copy the shown results as JSON (for notes, spreadsheets or another AI)">Copy results as JSON</button><button class="btn small" id="copyLink" title="Copy a link that sets up this screener on another device">Copy setup link</button></div>
   <div class="bar" id="bar"><i></i></div>
   <div class="status" id="status">Press Scan to start.</div>
   <div class="radar" id="radar"></div>
@@ -372,7 +373,7 @@ async function copyText(text) {
     try { ok = document.execCommand("copy"); } catch { ok = false; }
     ta.remove();
   }
-  toast(ok ? `Copied ${short(text)}` : "Copy was blocked by the browser. Long-press the address instead.");
+  toast(ok ? (text.length > 80 ? "Copied" : `Copied ${short(text)}`) : "Copy was blocked by the browser. Long-press to copy instead.");
 }
 function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("on"); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("on"), 1800); }
 
@@ -1442,7 +1443,7 @@ function viewFilter(c) {
 // ------------------------------------------------------------ pipeline
 async function scan() {
   if (S.busy) return;
-  S.busy = true; $("#scanBtn").disabled = true; S.meta = null;
+  S.busy = true; $("#scanBtn").disabled = true; S.meta = null; document.body.dataset.scanState = "busy";
   try {
     const t0 = Date.now();
     progress(0.02, "Discovering…");
@@ -1456,7 +1457,7 @@ async function scan() {
     setStatus(`Scanned ${new Date().toLocaleTimeString()} in ${secs}s · ${jevLine()} · ${S.gtNote}`, S.errors);
   } catch (e) {
     console.error(e); setStatus("Scan failed: " + e.message, S.errors);
-  } finally { S.busy = false; $("#scanBtn").disabled = false; doneProgress(); }
+  } finally { S.busy = false; $("#scanBtn").disabled = false; doneProgress(); document.body.dataset.scanState = "done"; }
 }
 function jevLine() {
   if (!workerBase()) return "Jev offline (no Worker set in Settings), so grades are rules-only";
@@ -1656,6 +1657,7 @@ function render() {
   $("#nWatch").textContent = Object.keys(mem.stars).length || "";
   $("#nLog").textContent = Object.keys(mem.outcomes).length || "";
   lazyBubblemaps();
+  try { publishResults(); } catch (e) { console.warn(e); }
 }
 function renderModes() {
   $("#modes").innerHTML = Object.entries(MODES).map(([k, m]) =>
@@ -1873,6 +1875,11 @@ function bind() {
   $("#fToggle").onclick = () => $("#filters").classList.toggle("open");
   $("#radar").onclick = (e) => { const b = e.target.closest("[data-meta]"); if (!b) return; S.meta = b.dataset.meta && S.meta !== b.dataset.meta ? b.dataset.meta : null; finalize(); };
   $("#caBtn").onclick = () => checkCA($("#caInput").value);
+  $("#copyJson").onclick = () => { publishResults(); copyText(JSON.stringify(window.trenchResults, null, 2)); };
+  $("#copyLink").onclick = () => {
+    if (!workerBase()) { toast("Add your Worker URL in Settings first"); return; }
+    copyText(`${location.origin}${location.pathname}?worker=${encodeURIComponent(workerBase())}&auto=1`);
+  };
   $("#caInput").addEventListener("keydown", (e) => { if (e.key === "Enter") checkCA($("#caInput").value); });
   $$(".tab").forEach((t) => t.onclick = () => {
     S.tab = t.dataset.tab; $$(".tab").forEach((x) => x.classList.toggle("on", x === t));
@@ -1924,10 +1931,58 @@ function bind() {
 }
 function confirmClear() { const b = $("#sClearLog"); if (b.dataset.armed) { delete b.dataset.armed; b.textContent = "Clear outcome log"; return true; } b.dataset.armed = "1"; b.textContent = "Tap again to confirm"; return false; }
 
+// Link parameters, so one link sets up a phone or an agent:
+//   ?worker=<url>  saves the Worker URL in this browser (then removed from the address bar)
+//   ?mode=early|lowcap|fresh|recovery|default   ?strict=0|1   ?auto=1 (scan on load)   ?ca=<address> (check on load)
+function applyLinkParams() {
+  const q = new URLSearchParams(location.search);
+  const w = q.get("worker");
+  let workerNote = "";
+  if (w && /^https:\/\/[a-z0-9.-]+\.workers\.dev\/?$/i.test(w.trim())) {
+    const nw = w.trim().replace(/\/+$/, "");
+    // Never silently replace a Worker that's already saved: a bad link could point the page at someone else's Worker.
+    if (!settings.workerUrl || settings.workerUrl === nw) { settings.workerUrl = nw; settings.useJev = true; }
+    else workerNote = `This link asked to switch your Worker to ${nw}. Your saved Worker was kept; change it in Settings if you meant to.`;
+  }
+  if (q.get("mode") && MODES[q.get("mode")]) settings.mode = q.get("mode");
+  if (q.get("strict") === "0" || q.get("strict") === "1") settings.strict = q.get("strict") === "1";
+  saveSettings();
+  if (w) { q.delete("worker"); history.replaceState(null, "", location.pathname + (q.toString() ? "?" + q : "") + location.hash); }
+  return { auto: q.get("auto") === "1", ca: q.get("ca"), workerNote };
+}
+
+// Machine-readable results for AI agents and scripts: window.trenchResults and
+// <script id="ts-results" type="application/json">, refreshed after every scan, check or refresh.
+function publishResults() {
+  const pack = (c) => c && c.d ? {
+    symbol: c.symbol, name: c.name, chain: c.chain, address: c.address, ageHours: c.ageH === null ? null : Math.round(c.ageH * 100) / 100,
+    grade: c.d.grade, verdict: c.d.verdict, decidedBy: c.d.source, gradeProbabilities: Object.fromEntries((c.d.gradeProbs || []).map((x) => [x.k, Math.round(x.p * 100) / 100])),
+    notes: c.d.notes, capsAtC: c.caps, rulesScore: c.pillars.total, pillars: c.pillars,
+    thesis: c.d.thesis?.text || null, thesisSource: c.d.thesis?.text ? c.d.thesis.source : null, narrative: c.d.narrative || null,
+    findings: findings(c).map((f) => f.text), phase: c.d.phase, gap: c.d.gap,
+    marketCap: c.market.mcap, liquidity: c.market.liq, volume24h: c.market.vol.h24, trades1h: c.crowd.trades1h, priceChange: c.market.chg,
+    pairGone: Boolean(c.gone), links: { dexscreener: c.pairUrl, bubblemaps: bubblemapsUrl(c), security: c.sec?.url || null },
+  } : null;
+  const out = {
+    generatedAt: new Date().toISOString(), mode: settings.mode, strict: settings.strict, jev: jevLine(), funnel: S.funnel,
+    disclaimer: "Grades rank evidence, not outcomes. Not predictions, not buy ratings. An A-grade memecoin is still a lottery ticket.",
+    shown: S.shown.map(pack), checked: pack(S.checked),
+  };
+  window.trenchResults = out;
+  let el = document.getElementById("ts-results");
+  if (!el) { el = document.createElement("script"); el.type = "application/json"; el.id = "ts-results"; document.body.appendChild(el); }
+  el.textContent = JSON.stringify(out).replace(/</g, "\\u003c");
+  document.body.dataset.scanState = S.busy ? "busy" : "done";
+}
+
 function init() {
+  const link = applyLinkParams();
   if (!MODES[settings.mode]) settings.mode = "default";
   writeFilterInputs(); bind(); render();
   if (!workerBase()) setStatus("Press Scan to start. Jev is offline until you add your Worker URL in Settings, so grades will be rules-only.");
+  if (link.workerNote) setStatus(link.workerNote);
+  if (link.ca) { $("#caInput").value = link.ca; checkCA(link.ca); }
+  else if (link.auto) scan();
 }
 init();
 </script>
