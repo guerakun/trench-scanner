@@ -1305,7 +1305,7 @@ function decide(c) {
     d.thesis = { text: cand.text, source: cand.source, by: "jev", p: tp[0]?.p ?? null };
   } else if (tpick === "none") d.thesis = { text: null, by: "jev", note: "Jev found no sentence that explains the coin" };
   else if (cands.find((x) => x.source === "description")) d.thesis = { text: cands.find((x) => x.source === "description").text, source: "description", by: "first line" };
-  else d.thesis = { text: null, note: "No description or story given" };
+  else d.thesis = { text: null, note: cands.length ? `No description given. ${cands.length} X post${cands.length > 1 ? "s" : ""} found, but only Jev picks a thesis from other people's posts` : "No description or story given" };
   const NARR = ["ai_tech", "animal_pet", "political_news", "celebrity_influencer", "internet_meme_culture", "crypto_native", "real_world_assets", "community_takeover", "utility_claim", "other", "not_enough_evidence"];
   const np = J?.narrative ? sortedProbs(J.narrative, NARR) : [];
   d.narrative = np[0]?.k || (J?.narrative && validChoice(J.narrative, NARR)) || null;
