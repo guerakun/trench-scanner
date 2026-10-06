@@ -46,6 +46,7 @@ const STRM = "strmRqUCoQUgGUan5YhzUZa6KqdzwX5L6FpUxfmKg5m";
 const V = { mint: key32("vault-mint"), vault: key32("vault-escrow"), meta: key32("vault-meta"), creator: key32("vault-creator") };
 const UNLOCK = Math.floor(Date.now() / 1000) + 30 * 86400 + 600;
 tokens[10].addr = V.mint.str; tokens[10].vault = "streamflow";   // creator locked 26.8% to themselves, readable terms
+tokens[17].vault = "old";                                        // Streamflow vault with no history on the free RPC
 tokens[16].whale = 14;                                           // one unlocked wallet holds 14%
 tokens[13].vault = "other";                                      // 12% in a locker whose terms can't be read
 function streamflowMeta() {
@@ -95,8 +96,9 @@ function rugReport(mint) {
     creatorBalance: 0,
     ...(t.vault === "streamflow" ? { creator: V.creator.str, knownAccounts: { [V.vault.str]: { name: "Streamflow Vault", type: "LOCKER" } } } : {}),
     ...(t.vault === "other" ? { knownAccounts: { LOCKX: { name: "Jupiter Lock", type: "LOCKER" } } } : {}),
+    ...(t.vault === "old" ? { knownAccounts: { OLDVAULT: { name: "Streamflow Vault", type: "LOCKER" } } } : {}),
     ...(t.whale ? { topHolders: [{ address: "CURVEACC", owner: curvePk, pct: 40, insider: false }, { address: "WhaleTokenAcct", owner: "WhaLe1111111111111111111111111111111111Big", pct: t.whale, insider: false }, ...Array.from({ length: 10 }, (_, k) => ({ address: "H" + k, owner: "O" + k, pct: 1.1, insider: false }))] } : {}),
-    ...(t.vault ? { topHolders: [{ address: "CURVEACC", owner: curvePk, pct: 40, insider: false }, t.vault === "streamflow" ? { address: V.vault.str, owner: V.vault.str, pct: 26.8, insider: false } : { address: "LOCKX", owner: "LOCKX", pct: 12, insider: false }, ...Array.from({ length: 10 }, (_, k) => ({ address: "H" + k, owner: "O" + k, pct: 1.2, insider: false }))] } : {}),
+    ...(t.vault ? { topHolders: [{ address: "CURVEACC", owner: curvePk, pct: 40, insider: false }, t.vault === "streamflow" ? { address: V.vault.str, owner: V.vault.str, pct: 26.8, insider: false } : t.vault === "old" ? { address: "OLDVAULT", owner: "OLDVAULT", pct: 4, insider: false } : { address: "LOCKX", owner: "LOCKX", pct: 12, insider: false }, ...Array.from({ length: 10 }, (_, k) => ({ address: "H" + k, owner: "O" + k, pct: 1.2, insider: false }))] } : {}),
   };
 }
 function goplus(addr) {
@@ -261,6 +263,8 @@ try {
   ok("vault coin: Jev's evidence includes the vault", jv && jv.paysTo === "creator" && jv.termsKnown && Math.abs(jv.daysUntilFirstUnlock - 30) < 0.1 && jv.supplyPct === 26.8, JSON.stringify(jv));
   const uc = cards.find((c) => /lock vault \(Jupiter Lock\)/.test(c.text));
   ok("unreadable locker: says terms couldn't be read, still capped", uc && /12\.0% of the supply is held in a lock vault \(Jupiter Lock\)\. We couldn't read when it unlocks/.test(uc.text) && "CDF".includes(uc.grade) && /12\.0% of the supply sits in a lock vault/.test(uc.text), uc ? uc.grade : "missing");
+  const oc = cards.find((c) => /4\.0% of the supply is held in a Streamflow vault/.test(c.text));
+  ok("old vault: says why terms are unknown, no cap under 10%", oc && /older than the free RPC's history/.test(oc.text) && !/sits in a lock vault/.test(oc.text), oc ? oc.grade : "missing");
   const unit = await page.evaluate(() => {
     const now = 2000000000, base = { start: now - 100 * 86400, cliff: now - 100 * 86400, cliffAmt: 0, deposited: 1000, period: 86400, perPeriod: 5, end: now + 100 * 86400, recipient: "R", sender: "S", cancelableBySender: true };
     const vest = vaultView(base, "CREATOR", now);

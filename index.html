@@ -951,7 +951,8 @@ async function streamflowTerms(mint, vault) {
     if (list.length < 1000) { before = null; break; }
     before = list[list.length - 1].signature;
   }
-  if (!sigs.length || before) return null;                              // empty, or too busy to reach its creation cheaply
+  if (!sigs.length) return { unreadable: "the vault is older than the free RPC's history" };  // public nodes keep only recent transactions
+  if (before) return { unreadable: "the vault is too busy to trace cheaply" };
   const tx = await rpc("getTransaction", [sigs[sigs.length - 1].signature, { encoding: "jsonParsed", maxSupportedTransactionVersion: 0 }]);
   const msg = tx?.result?.transaction?.message;
   if (!msg) return null;
@@ -981,9 +982,9 @@ async function readVaultTerms(coins) {
     if (hit && Date.now() - hit.t < 24 * 3.6e6) { v.terms = hit.terms; continue; }
     if (!/streamflow/i.test(v.name)) { v.termsNote = "this locker's terms can't be read yet"; continue; }
     try {
-      v.terms = await streamflowTerms(c.address, v.address);
-      if (v.terms) vaultMem[v.address] = { t: Date.now(), terms: v.terms };
-      else v.termsNote = "the lock contract couldn't be found";
+      const t = await streamflowTerms(c.address, v.address);
+      if (t && !t.unreadable) { v.terms = t; vaultMem[v.address] = { t: Date.now(), terms: t }; }
+      else v.termsNote = t?.unreadable || "the lock contract couldn't be found";
     } catch (e) { v.termsNote = "the Solana RPC didn't answer"; }
     await sleep(150);
   }

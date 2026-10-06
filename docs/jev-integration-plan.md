@@ -50,7 +50,7 @@ Plain sentences built by code from data already gathered (holder concentration, 
 ### Lock vaults
 - RugCheck labels lock and vesting vaults (for example Streamflow) among the top holders. The scanner keeps them out of the "top 10 wallets" figure but reports them as their own finding, counts them as concentration in the Holders pillar, and passes them to Jev as `holders.lockVaults`.
 - For Streamflow vaults the page reads the lock contract through the free Solana RPC (three calls per vault, cached 24h): who is paid, when it unlocks or vests, and whether the sender can cancel. The contract is only trusted if its mint and vault address match the coin.
-- Other lockers, and EVM lockers reported by GoPlus, show "terms unknown".
+- Other lockers, and EVM lockers reported by GoPlus, show "terms unknown". So do Streamflow vaults created before the free RPC's transaction history begins (public nodes keep only recent history), with that reason stated on the card.
 - 10% or more of the supply in lock vaults caps the grade at C, whatever the terms.
 - A vault finding is red when tokens are claimable now, the first unlock is within 7 days, or the sender can cancel.
 
