@@ -709,13 +709,22 @@ function parseRugcheck(r) {
   const marketKeys = new Set();
   let lpLockedPct = null, curveMarket = false;
   for (const m of r.markets || []) {
-    for (const k of [m.pubkey, m.liquidityAAccount, m.liquidityBAccount]) if (k) marketKeys.add(k);
+    for (const k of [m.pubkey, m.liquidityAAccount?.owner, m.liquidityBAccount?.owner]) if (typeof k === "string" && k) marketKeys.add(k);
     if (/pump_fun$/.test(m.marketType || "")) curveMarket = true;
     const l = num(m.lp?.lpLockedPct);
     if (l !== null && !/pump_fun$/.test(m.marketType || "")) lpLockedPct = Math.max(lpLockedPct ?? 0, l);
   }
-  for (const [addr, k] of Object.entries(r.knownAccounts || {})) if (/AMM|LOCKER|CURVE|POOL/i.test(k?.type || "")) marketKeys.add(addr);
-  const holders = (r.topHolders || []).filter((h) => !marketKeys.has(h.owner) && !marketKeys.has(h.address));
+  // Lock / vesting vaults (e.g. Streamflow) are not free float, but they are still someone's supply:
+  // keep them out of the "top wallets" numbers and report them separately.
+  const lockerKeys = new Map();
+  for (const [addr, k] of Object.entries(r.knownAccounts || {})) {
+    if (/LOCKER/i.test(k?.type || "")) lockerKeys.set(addr, k.name || "Lock vault");
+    else if (/AMM|CURVE|POOL/i.test(k?.type || "")) marketKeys.add(addr);
+  }
+  const notMarket = (r.topHolders || []).filter((h) => !marketKeys.has(h.owner) && !marketKeys.has(h.address));
+  const lockerOf = (h) => lockerKeys.get(h.address) || lockerKeys.get(h.owner) || null;
+  const vaults = notMarket.filter(lockerOf).map((h) => ({ address: h.address, name: lockerOf(h), pct: num(h.pct) || 0, terms: null }));
+  const holders = notMarket.filter((h) => !lockerOf(h));
   const pcts = holders.map((h) => num(h.pct) || 0);
   const insiderPct = holders.filter((h) => h.insider).reduce((s, h) => s + (num(h.pct) || 0), 0);
   const nets = Array.isArray(r.insiderNetworks) ? r.insiderNetworks : [];
@@ -739,6 +748,7 @@ function parseRugcheck(r) {
       graphInsiders: num(r.graphInsidersDetected),
       creatorPct, creator: r.creator || null,
       priorLaunches: creatorTokens ? creatorTokens.length : null,
+      vaults, vaultPct: vaults.reduce((a, v) => a + v.pct, 0),
     },
     lpLockedPct, curveMarket,
     launchpad: r.launchpad?.name || r.deployPlatform || null,
@@ -759,7 +769,10 @@ const DEAD = /^0x0{40}$|^0x0{36}dead$|^0x000000000000000000000000000000000000dea
 function parseGoPlus(d, chain, address) {
   const f = (k) => d[k] === "1";
   const n = (k) => num(d[k]);
-  const holders = (d.holders || []).filter((h) => !DEAD.test(h.address) && !(h.is_locked === 1 || h.is_locked === "1"));
+  const isLocked = (h) => h.is_locked === 1 || h.is_locked === "1";
+  const holders = (d.holders || []).filter((h) => !DEAD.test(h.address) && !isLocked(h));
+  const vaults = (d.holders || []).filter((h) => !DEAD.test(h.address) && isLocked(h))
+    .map((h) => ({ address: h.address, name: h.tag ? `${h.tag} locker` : "Locker contract", pct: (num(h.percent) || 0) * 100, terms: null, termsNote: "GoPlus doesn't report the unlock terms" }));
   const pcts = holders.filter((h) => !(h.is_contract === 1 || h.is_contract === "1")).map((h) => (num(h.percent) || 0) * 100);
   let lpLockedPct = null;
   if (Array.isArray(d.lp_holders) && d.lp_holders.length) {
@@ -799,6 +812,7 @@ function parseGoPlus(d, chain, address) {
       creatorPct: n("creator_percent") !== null ? n("creator_percent") * 100 : null, creator: d.creator_address || null,
       ownerPct: n("owner_percent") !== null ? n("owner_percent") * 100 : null,
       priorLaunches: null,
+      vaults, vaultPct: vaults.reduce((a, v) => a + v.pct, 0),
     },
     lpLockedPct,
   };
@@ -880,6 +894,108 @@ async function readCurves(coins) {
       if (!c.market.liqReported && c.market.nativeUsd) c.market.liq = c.curve.solRaised * c.market.nativeUsd;
     });
   }
+}
+
+// ------------------------------------------------------------ lock vault terms (Streamflow, free Solana RPC)
+// A vault's token account was created by the lock contract, so its oldest transaction names the
+// contract's data account. That account says who is paid, when, and whether it can be canceled.
+// Every field is validated against the coin (mint + vault address must match) before it is trusted.
+const STRM_PROGRAM = "strmRqUCoQUgGUan5YhzUZa6KqdzwX5L6FpUxfmKg5m";
+const VAULT_SHOW_PCT = 1;    // smaller vaults are ignored
+const VAULT_CAP_PCT = 10;    // this much supply in lock vaults caps the grade at C
+const B58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+function b58(bytes) {
+  let n = 0n; for (const b of bytes) n = n * 256n + BigInt(b);
+  let out = ""; while (n > 0n) { out = B58[Number(n % 58n)] + out; n /= 58n; }
+  for (const b of bytes) { if (b === 0) out = "1" + out; else break; }
+  return out;
+}
+function decodeStreamflow(u, mint, vault) {
+  if (!u || u.length < 527) return null;
+  const dv = new DataView(u.buffer, u.byteOffset, u.byteLength);
+  const pk = (o) => b58(u.subarray(o, o + 32)), n = (o) => Number(dv.getBigUint64(o, true));
+  if (pk(177) !== mint || pk(209) !== vault) return null;             // not this coin's vault
+  const flag = (o) => (u[o] === 0 ? false : u[o] === 1 ? true : null);
+  const t = {
+    platform: "Streamflow", sender: pk(49), recipient: pk(113), end: n(33), canceledAt: n(25),
+    start: n(409), deposited: n(417), period: Math.max(1, n(425)), perPeriod: n(433), cliff: n(441), cliffAmt: n(449),
+    cancelableBySender: flag(457), cancelableByRecipient: flag(458), transferableBySender: flag(460), transferableByRecipient: flag(461),
+  };
+  const sane = (x) => x > 1.4e9 && x < 4.2e9;
+  if (!(t.deposited > 0) || !sane(t.start) || !sane(t.end) || t.end < t.start) return null;
+  return t;
+}
+// Turns raw terms into what a reader needs. Times are unix seconds.
+function vaultView(terms, creator, now = Date.now() / 1000) {
+  const cliffT = Math.max(terms.start, terms.cliff || 0);
+  const unlockedAt = (ts) => ts < cliffT ? 0 : Math.min(terms.deposited, terms.cliffAmt + Math.floor((ts - cliffT) / terms.period) * terms.perPeriod);
+  const firstUnlock = terms.cliffAmt > 0 ? cliffT : cliffT + terms.period;
+  return {
+    kind: terms.cliffAmt >= terms.deposited * 0.99 ? "lock" : "vesting",
+    firstUnlock, fullUnlock: Math.max(terms.end, firstUnlock),
+    claimableNowPct: clamp(unlockedAt(now) / terms.deposited) * 100,
+    payoutTo: terms.recipient, payoutIsCreator: creator ? terms.recipient === creator : null,
+    senderCanCancel: terms.cancelableBySender,
+  };
+}
+async function streamflowTerms(mint, vault) {
+  let sigs = [], before;
+  for (let page = 0; page < 2; page++) {
+    const r = await rpc("getSignaturesForAddress", [vault, Object.assign({ limit: 1000 }, before ? { before } : {})]);
+    const list = r?.result || [];
+    sigs = sigs.concat(list);
+    if (list.length < 1000) { before = null; break; }
+    before = list[list.length - 1].signature;
+  }
+  if (!sigs.length || before) return null;                              // empty, or too busy to reach its creation cheaply
+  const tx = await rpc("getTransaction", [sigs[sigs.length - 1].signature, { encoding: "jsonParsed", maxSupportedTransactionVersion: 0 }]);
+  const msg = tx?.result?.transaction?.message;
+  if (!msg) return null;
+  const ixs = [...(msg.instructions || []), ...((tx.result.meta?.innerInstructions || []).flatMap((i) => i.instructions || []))]
+    .filter((i) => i.programId === STRM_PROGRAM && Array.isArray(i.accounts));
+  const cand = [];
+  for (const ix of ixs) for (const a of [ix.accounts[3], ...ix.accounts]) if (a && a !== mint && a !== vault && !cand.includes(a)) cand.push(a);
+  if (!cand.length) return null;
+  const res = await rpc("getMultipleAccounts", [cand.slice(0, 10), { encoding: "base64" }]);
+  for (const acc of res?.result?.value || []) {
+    if (!acc || acc.owner !== STRM_PROGRAM) continue;
+    const t = decodeStreamflow(b64bytes(acc.data[0]), mint, vault);
+    if (t) return t;
+  }
+  return null;
+}
+const vaultMem = LS.get("vaults", {});
+async function readVaultTerms(coins) {
+  const jobs = [];
+  for (const c of coins) {
+    if (c.chain !== "solana" || !c.sec?.ok) continue;
+    for (const v of (c.sec.holders.vaults || []).filter((x) => x.pct >= VAULT_SHOW_PCT).slice(0, 2)) if (!v.terms && !v.termsNote) jobs.push({ c, v });
+  }
+  jobs.sort((a, b) => b.v.pct - a.v.pct);
+  for (const { c, v } of jobs.slice(0, 12)) {
+    const hit = vaultMem[v.address];
+    if (hit && Date.now() - hit.t < 24 * 3.6e6) { v.terms = hit.terms; continue; }
+    if (!/streamflow/i.test(v.name)) { v.termsNote = "this locker's terms can't be read yet"; continue; }
+    try {
+      v.terms = await streamflowTerms(c.address, v.address);
+      if (v.terms) vaultMem[v.address] = { t: Date.now(), terms: v.terms };
+      else v.termsNote = "the lock contract couldn't be found";
+    } catch (e) { v.termsNote = "the Solana RPC didn't answer"; }
+    await sleep(150);
+  }
+  for (const [k, x] of Object.entries(vaultMem)) if (Date.now() - x.t > 24 * 3.6e6) delete vaultMem[k];
+  LS.set("vaults", vaultMem);
+}
+// Supply sitting in lock vaults that count for display and caps.
+function vaultsOf(c) { return c.sec?.ok ? (c.sec.holders.vaults || []).filter((v) => v.pct >= VAULT_SHOW_PCT) : []; }
+function vaultPctOf(c) { return vaultsOf(c).reduce((a, v) => a + v.pct, 0); }
+const dateStr = (sec) => new Date(sec * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+function inTime(sec, now = Date.now() / 1000) {
+  const d = sec - now;
+  if (d <= 0) return "already passed";
+  if (d < 3600) return `in ${Math.max(1, Math.round(d / 60))} min`;
+  if (d < 48 * 3600) return `in ${Math.round(d / 3600)} hours`;
+  return `in ${Math.round(d / 86400)} days`;
 }
 
 // ------------------------------------------------------------ bubblemaps
@@ -1006,7 +1122,9 @@ function rulePillars(c) {
   let hold = 6;
   if (h && (h.top1 !== null || h.top10 !== null)) {
     hold = 0;
-    const t1 = h.top1 ?? 100, t10 = h.top10 ?? 100;
+    // Supply in lock vaults is still one party's supply, so it counts toward concentration.
+    const vs = vaultsOf(c), vmax = Math.max(0, ...vs.map((v) => v.pct));
+    const t1 = Math.max(h.top1 ?? 100, vmax), t10 = (h.top10 ?? 100) + vaultPctOf(c);
     hold += t1 <= 3 ? 8 : t1 <= 5 ? 6 : t1 <= 10 ? 3 : 0;
     hold += t10 <= 20 ? 7 : t10 <= 30 ? 5 : t10 <= 45 ? 2 : 0;
     const ins = (h.insiderPct ?? 0), nets = h.insiderNetworks || 0, graph = h.graphInsiders ?? null;
@@ -1048,6 +1166,8 @@ function capsFor(c, dupeLosers) {
   if ((c.sec?.holders?.priorLaunches ?? 0) >= 5) caps.push(`serial deployer (${c.sec.holders.priorLaunches} prior launches)`);
   if (onCurve(c) && !c.curve?.validated) caps.push("bonding curve not validated");
   if (c.sec?.partial) caps.push("security report partial (RugCheck summary only)");
+  const vp = vaultPctOf(c);
+  if (vp >= VAULT_CAP_PCT) caps.push(`${vp.toFixed(1)}% of the supply sits in a lock vault`);
   return caps;
 }
 
@@ -1114,21 +1234,42 @@ function thesisCandidates(c) {
 
 // ------------------------------------------------------------ plain-language findings
 // Sentences built only from data already gathered; tone: g = reassuring, a = caution, r = risk, n = neutral.
+// One sentence per lock vault: how much, who is paid, when it unlocks, whether it can be canceled.
+function vaultFinding(v, creator, now = Date.now() / 1000) {
+  const pct = v.pct.toFixed(1), label = /streamflow/i.test(v.name) ? "Streamflow vault" : `lock vault (${v.name})`;
+  if (!v.terms) return { lvl: "a", text: `${pct}% of the supply is held in a ${label}. We couldn't read when it unlocks or who receives it (${v.termsNote || "terms not checked"}).` };
+  const w = vaultView(v.terms, creator, now);
+  const who = w.payoutIsCreator ? "the creator's wallet" : `wallet ${short(w.payoutTo)}`;
+  const cancel = w.senderCanCancel === true ? " Whoever set it up can cancel it and take the tokens back." : w.senderCanCancel === false ? " It can't be canceled early." : "";
+  let text;
+  if (w.claimableNowPct >= 99.5) text = `${pct}% of the supply sits in a ${label} that pays ${who}, and the lock has ended, so it can be claimed and sold at any time.`;
+  else if (w.kind === "lock") text = `${pct}% of the supply is locked in a ${label} that pays ${who}. It all unlocks on ${dateStr(w.firstUnlock)} (${inTime(w.firstUnlock, now)}).${cancel}`;
+  else text = `${pct}% of the supply is in a ${label} that releases to ${who} bit by bit from ${dateStr(w.firstUnlock)} to ${dateStr(w.fullUnlock)}. About ${w.claimableNowPct.toFixed(0)}% of it can be claimed now.${cancel}`;
+  const soon = w.firstUnlock - now < 7 * 86400;
+  const lvl = w.claimableNowPct >= 1 || soon || w.senderCanCancel === true ? "r" : v.pct < 5 ? "n" : "a";
+  return { lvl, text };
+}
 function findings(c) {
   const s = c.sec || {}, h = s.holders || {}, out = [];
   const add = (lvl, text) => out.push({ lvl, text });
+  const vs = vaultsOf(c), excl = vs.length ? "excluding the pool and lock vaults" : "excluding the pool";
   if (s.ok && h.top10 !== null && h.top10 !== undefined) {
     const t = h.top10.toFixed(1);
-    if (h.top10 < 20) add("g", `The top 10 wallets hold ${t}% of the supply (excluding the pool). Supply is fairly spread out.`);
-    else if (h.top10 <= 35) add("a", `The top 10 wallets hold ${t}% of the supply (excluding the pool). A few wallets can move the price.`);
-    else add("r", `The top 10 wallets hold ${t}% of the supply (excluding the pool). A handful of wallets could crash the price.`);
+    if (h.top10 < 20) add("g", `The top 10 wallets hold ${t}% of the supply (${excl}). ${vs.length ? "Outside the vault, supply" : "Supply"} is fairly spread out.`);
+    else if (h.top10 <= 35) add("a", `The top 10 wallets hold ${t}% of the supply (${excl}). A few wallets can move the price.`);
+    else add("r", `The top 10 wallets hold ${t}% of the supply (${excl}). A handful of wallets could crash the price.`);
     if ((h.top1 ?? 0) >= 5) add(h.top1 >= 10 ? "r" : "a", `The biggest single wallet holds ${h.top1.toFixed(1)}%.`);
   } else add("n", "Holder data isn't available for this coin, so concentration is unknown.");
+  for (const v of vs.slice(0, 2)) out.push(vaultFinding(v, h.creator));
+  if (vs.length > 2) add("a", `${vs.length - 2} more lock vault${vs.length > 3 ? "s" : ""} hold another ${vs.slice(2).reduce((a, v) => a + v.pct, 0).toFixed(1)}%.`);
   if (s.ok) {
     const cp = h.creatorPct, pl = h.priorLaunches;
     const holds = cp === null || cp === undefined ? "We couldn't see how much the creator holds" : cp < 0.05 ? "The creator holds almost none of the supply now" : `The creator holds ${cp.toFixed(cp < 1 ? 2 : 1)}% now`;
     const hist = pl === null || pl === undefined ? "" : pl === 0 ? ", and this is their first known launch" : pl >= 5 ? `, and has launched ${pl} other coins (a serial deployer)` : `, and has launched ${pl} other coin${pl > 1 ? "s" : ""}`;
-    add(pl >= 5 || (cp ?? 0) >= 10 ? "r" : (cp ?? 0) >= 5 ? "a" : "n", holds + hist + ".");
+    const forCreator = vs.filter((v) => v.terms && v.terms.recipient === h.creator).reduce((a, v) => a + v.pct, 0);
+    const locked = forCreator > 0 ? ` in their own wallet, not counting the ${forCreator.toFixed(1)}% locked for them` : "";
+    const eff = (cp ?? 0) + forCreator;
+    add(pl >= 5 || eff >= 10 ? "r" : eff >= 5 ? "a" : "n", holds + locked + hist + ".");
     if (h.insiderNetworks || (h.insiderPct ?? 0) >= 1 || h.graphInsiders) {
       add((h.insiderPct ?? 0) >= 5 || h.insiderNetworks > 1 ? "r" : "a", `RugCheck flags linked insider wallets${h.insiderPct ? ` holding ${h.insiderPct.toFixed(1)}%` : ""}${h.insiderNetworks ? ` across ${h.insiderNetworks} network${h.insiderNetworks > 1 ? "s" : ""}` : ""}.`);
     } else if (s.checker === "rugcheck" && !s.partial) add("g", "RugCheck found no linked insider wallets.");
@@ -1175,6 +1316,12 @@ function jevState(c) {
       total: h.total, topHolderPct: r2(h.top1), top10Pct: r2(h.top10), insiderHoldersPct: r2(h.insiderPct),
       insiderNetworks: h.insiderNetworks, insiderNetworkAccounts: h.insiderNetworkSize ?? null, graphInsidersDetected: h.graphInsiders,
       creatorHoldsPct: r2(h.creatorPct), creatorPriorLaunches: h.priorLaunches,
+      note: "topHolderPct and top10Pct exclude pools and lock vaults. lockVaults is supply held in lock or vesting contracts: it is not tradable yet, but one party controls it.",
+      lockVaults: vaultsOf(c).slice(0, 3).map((v) => {
+        const w = v.terms ? vaultView(v.terms, h.creator) : null, days = (t) => r2((t - Date.now() / 1000) / 86400);
+        return { supplyPct: r2(v.pct), platform: v.name, termsKnown: Boolean(w), kind: w?.kind ?? null, paysTo: w ? (w.payoutIsCreator ? "creator" : "other wallet") : null,
+          daysUntilFirstUnlock: w ? days(w.firstUnlock) : null, daysUntilFullyUnlocked: w ? days(w.fullUnlock) : null, claimableNowPctOfVault: w ? r2(w.claimableNowPct) : null, senderCanCancel: w?.senderCanCancel ?? null };
+      }),
     } : { available: false },
     liquidity: {
       usd: r2(c.market.liq), lpLockedPct: r2(lpLockedPct(c)), liqToMcap: c.market.mcap ? r2(c.market.liq / c.market.mcap) : null,
@@ -1195,7 +1342,8 @@ function jevState(c) {
 }
 function fingerprint(c) {
   const b = (x) => x ? Math.round(Math.log(1 + x) * 4) : 0;
-  return [c.key, b(c.market.mcap), b(c.market.liq), b(c.crowd.trades1h), c.rv.v, c.caps.length, c.x ? 1 : 0].join("|");
+  const vs = vaultsOf(c);
+  return [c.key, b(c.market.mcap), b(c.market.liq), b(c.crowd.trades1h), c.rv.v, c.caps.length, c.x ? 1 : 0, Math.round(vaultPctOf(c)), vs.filter((v) => v.terms).length].join("|");
 }
 
 // ------------------------------------------------------------ Jev: calls
@@ -1540,6 +1688,8 @@ async function processCoins(prog = () => {}) {
 
   prog(0.5, "Reading bonding curves…");
   await readCurves(met.filter((c) => !c.curve));
+  prog(0.52, "Reading lock vaults…");
+  await readVaultTerms(met);
   // Curve coins have no reported liquidity until the curve is read, so apply min liquidity again now.
   if (f.minLiq) met = met.filter((c) => !(onCurve(c) && c.curve?.validated && (c.market.liq ?? 0) < f.minLiq));
 
@@ -1657,6 +1807,7 @@ async function checkCA(ca) {
     progress(0.3, "Security check…");
     coin.sec = await securityFor(coin);
     await readCurves([coin]);
+    await readVaultTerms([coin]);
     coin.derived = {}; prepareEvidence(coin);
     const peers = S.met.filter((c) => c.key !== coin.key);
     computeGaps([...peers, coin]);
@@ -1845,6 +1996,7 @@ function card(c, opt = {}) {
     <span>Top holder</span><span>${h.top1 === null || h.top1 === undefined ? "?" : h.top1.toFixed(1) + "%"}</span>
     <span>Top 10</span><span>${h.top10 === null || h.top10 === undefined ? "?" : h.top10.toFixed(1) + "%"}</span>
     ${h.insiderPct !== null && h.insiderPct !== undefined ? `<span>Insiders</span><span>${h.insiderPct.toFixed(1)}%${h.insiderNetworks ? ` · ${h.insiderNetworks} network${h.insiderNetworks > 1 ? "s" : ""}` : ""}${h.graphInsiders ? ` · ${h.graphInsiders} graph-detected` : ""}</span>` : ""}
+    ${vaultsOf(c).map((v) => { const w = v.terms ? vaultView(v.terms, h.creator) : null; return `<span>${esc(v.name)}</span><span>${v.pct.toFixed(1)}% of supply · ${w ? `${w.kind === "lock" ? "unlocks" : "releases from"} ${dateStr(w.firstUnlock)}${w.kind === "vesting" ? " to " + dateStr(w.fullUnlock) : ""} · pays ${w.payoutIsCreator ? "the creator" : esc(short(w.payoutTo))} · ${w.senderCanCancel ? "cancelable" : "not cancelable"}` : "terms unknown"}</span>`; }).join("")}
     <span>Creator holds</span><span>${h.creatorPct === null || h.creatorPct === undefined ? "?" : h.creatorPct.toFixed(2) + "%"}</span>
     <span>Creator's prior launches</span><span>${h.priorLaunches ?? "unknown"}</span></div>` : "<div>Unavailable.</div>";
   const xBody = c.x && !c.x.error ? `<div class="kv">
@@ -2045,6 +2197,7 @@ function publishResults() {
     notes: c.d.notes, capsAtC: c.caps, rulesScore: c.pillars.total, pillars: c.pillars,
     thesis: c.d.thesis?.text || null, thesisSource: c.d.thesis?.text ? c.d.thesis.source : null, narrative: c.d.narrative || null,
     findings: findings(c).map((f) => f.text), phase: c.d.phase, gap: c.d.gap,
+    lockVaults: vaultsOf(c).map((v) => { const w = v.terms ? vaultView(v.terms, c.sec.holders.creator) : null; return { name: v.name, address: v.address, supplyPct: Math.round(v.pct * 100) / 100, termsKnown: Boolean(w), kind: w?.kind ?? null, paysTo: w?.payoutTo ?? null, paysCreator: w?.payoutIsCreator ?? null, firstUnlock: w ? new Date(w.firstUnlock * 1000).toISOString() : null, fullyUnlocked: w ? new Date(w.fullUnlock * 1000).toISOString() : null, senderCanCancel: w?.senderCanCancel ?? null }; }),
     marketCap: c.market.mcap, liquidity: c.market.liq, volume24h: c.market.vol.h24, trades1h: c.crowd.trades1h, priceChange: c.market.chg,
     pairGone: Boolean(c.gone), links: { dexscreener: c.pairUrl, bubblemaps: bubblemapsUrl(c), security: c.sec?.url || null },
   } : null;

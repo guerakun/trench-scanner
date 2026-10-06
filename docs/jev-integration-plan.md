@@ -32,7 +32,7 @@ Roles, as Faisal set them:
 
 ### Caps applied after Jev (code, not negotiable)
 - Verdict FAIL → grade at most D.
-- Capped at C: unknown verdict; thin or unlocked LP on a coin under 24h; duplicate ticker (deepest-liquidity CA across the whole scan keeps the name); serial deployer (5+ prior launches); bonding curve not validated (four.meme curves can't be read yet, so they always hit this cap); RugCheck summary-only data.
+- Capped at C: unknown verdict; thin or unlocked LP on a coin under 24h; duplicate ticker (deepest-liquidity CA across the whole scan keeps the name); serial deployer (5+ prior launches); bonding curve not validated (four.meme curves can't be read yet, so they always hit this cap); RugCheck summary-only data; 10% or more of the supply in lock vaults.
 
 ### Phase
 - Tie between phases → the rules-based phase if it's one of the tied options.
@@ -46,6 +46,13 @@ Roles, as Faisal set them:
 
 ### What we found
 Plain sentences built by code from data already gathered (holder concentration, biggest wallet, creator holdings and prior launches, insider networks, LP lock or curve progress, taxes and authorities), each marked green, amber, red or neutral. Raw numbers stay in the dropdowns.
+
+### Lock vaults
+- RugCheck labels lock and vesting vaults (for example Streamflow) among the top holders. The scanner keeps them out of the "top 10 wallets" figure but reports them as their own finding, counts them as concentration in the Holders pillar, and passes them to Jev as `holders.lockVaults`.
+- For Streamflow vaults the page reads the lock contract through the free Solana RPC (three calls per vault, cached 24h): who is paid, when it unlocks or vests, and whether the sender can cancel. The contract is only trusted if its mint and vault address match the coin.
+- Other lockers, and EVM lockers reported by GoPlus, show "terms unknown".
+- 10% or more of the supply in lock vaults caps the grade at C, whatever the terms.
+- A vault finding is red when tokens are claimable now, the first unlock is within 7 days, or the sender can cancel.
 
 ### When Jev is unavailable
 No Worker, Jev turned off, or an error → the card says **Rules-only** and why. Nothing is silently faked.

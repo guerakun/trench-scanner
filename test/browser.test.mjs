@@ -38,6 +38,26 @@ tokens[20].honeypot = true;           // bsc honeypot
 tokens[22].cannotBuy = true;          // bsc "cannot buy" (danger) must force FAIL
 let goneAddr = null;                  // set later to simulate a vanished pair
 
+// ---- lock vault scenarios
+const B58A = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+const b58enc = (buf) => { let n = BigInt("0x" + Buffer.from(buf).toString("hex")); let out = ""; while (n > 0n) { out = B58A[Number(n % 58n)] + out; n /= 58n; } for (const b of buf) { if (b === 0) out = "1" + out; else break; } return out; };
+const key32 = (label) => { const bytes = crypto.createHash("sha256").update(label).digest(); return { bytes, str: b58enc(bytes) }; };
+const STRM = "strmRqUCoQUgGUan5YhzUZa6KqdzwX5L6FpUxfmKg5m";
+const V = { mint: key32("vault-mint"), vault: key32("vault-escrow"), meta: key32("vault-meta"), creator: key32("vault-creator") };
+const UNLOCK = Math.floor(Date.now() / 1000) + 30 * 86400 + 600;
+tokens[10].addr = V.mint.str; tokens[10].vault = "streamflow";   // creator locked 26.8% to themselves, readable terms
+tokens[13].vault = "other";                                      // 12% in a locker whose terms can't be read
+function streamflowMeta() {
+  const b = Buffer.alloc(1104); b.writeBigUInt64LE(4n, 0); b[8] = 4;
+  b.writeBigUInt64LE(BigInt(UNLOCK), 33);
+  V.creator.bytes.copy(b, 49); V.creator.bytes.copy(b, 113); V.mint.bytes.copy(b, 177); V.vault.bytes.copy(b, 209);
+  const amt = 264436332232736n;
+  b.writeBigUInt64LE(BigInt(UNLOCK), 409); b.writeBigUInt64LE(amt, 417); b.writeBigUInt64LE(1n, 425); b.writeBigUInt64LE(amt, 433);
+  b.writeBigUInt64LE(BigInt(UNLOCK), 441); b.writeBigUInt64LE(amt, 449);
+  return { owner: STRM, data: [b.toString("base64"), "base64"], lamports: 1, executable: false };
+}
+const jevStates = {};
+
 const pairOf = (t) => ({
   chainId: t.chain, dexId: t.pump ? "pumpfun" : t.chain === "solana" ? "raydium" : t.chain === "bsc" ? "pancakeswap" : "uniswap",
   url: `https://dexscreener.com/${t.chain}/${t.addr}`, pairAddress: t.pump ? solAddr(1000 + t.i) : "PAIR" + t.i,
@@ -72,6 +92,9 @@ function rugReport(mint) {
     totalHolders: 200 + t.i * 40, graphInsidersDetected: 0, insiderNetworks: null,
     creatorTokens: t.serial ? Array.from({ length: 7 }, (_, k) => ({ mint: "old" + k })) : [],
     creatorBalance: 0,
+    ...(t.vault === "streamflow" ? { creator: V.creator.str, knownAccounts: { [V.vault.str]: { name: "Streamflow Vault", type: "LOCKER" } } } : {}),
+    ...(t.vault === "other" ? { knownAccounts: { LOCKX: { name: "Jupiter Lock", type: "LOCKER" } } } : {}),
+    ...(t.vault ? { topHolders: [{ address: "CURVEACC", owner: curvePk, pct: 40, insider: false }, t.vault === "streamflow" ? { address: V.vault.str, owner: V.vault.str, pct: 26.8, insider: false } : { address: "LOCKX", owner: "LOCKX", pct: 12, insider: false }, ...Array.from({ length: 10 }, (_, k) => ({ address: "H" + k, owner: "O" + k, pct: 1.2, insider: false }))] } : {}),
   };
 }
 function goplus(addr) {
@@ -145,12 +168,16 @@ async function route(r) {
   if (u.host === "api.gopluslabs.io") return J(goplus(u.searchParams.get("contract_addresses")));
   if (u.host === "api-legacy.bubblemaps.io") return J({ availability: true, status: "OK" });
   if (u.host === "solana-rpc.publicnode.com" || u.host === "api.mainnet-beta.solana.com") {
-    const body = JSON.parse(req.postData()); return J({ jsonrpc: "2.0", id: 1, result: { value: body.params[0].map(curveAccount) } });
+    const body = JSON.parse(req.postData());
+    hits["rpc:" + body.method] = (hits["rpc:" + body.method] || 0) + 1;
+    if (body.method === "getSignaturesForAddress") return J({ jsonrpc: "2.0", id: 1, result: body.params[0] === V.vault.str ? [{ signature: "sigFeeClaim" }, { signature: "sigCreate" }] : [] });
+    if (body.method === "getTransaction") return J({ jsonrpc: "2.0", id: 1, result: body.params[0] === "sigCreate" ? { meta: { innerInstructions: [] }, transaction: { message: { instructions: [{ programId: "ComputeBudget111111111111111111111111111111", accounts: [], data: "x" }, { programId: STRM, accounts: [V.creator.str, "SenderTokens", V.creator.str, V.meta.str, V.vault.str, "RecipientTokens", V.mint.str, STRM], data: "x" }] } } } : null });
+    return J({ jsonrpc: "2.0", id: 1, result: { value: body.params[0].map((k) => (k === V.meta.str ? streamflowMeta() : curveAccount(k))) } });
   }
   if (u.origin === WORKER) {
     if (req.method() === "OPTIONS") return r.fulfill({ status: 204, headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type", "Access-Control-Allow-Methods": "GET,POST" } });
     if (u.pathname === "/health") return J({ ok: true, jev: true, x: true, questionsVersion: "test" });
-    if (u.pathname === "/jev") { const b = JSON.parse(req.postData()); const results = {}; b.coins.forEach((c) => { results[c.id] = { answers: mockJev(c.state, jevCalls++) }; }); return J({ results, usage: {} }); }
+    if (u.pathname === "/jev") { const b = JSON.parse(req.postData()); const results = {}; b.coins.forEach((c) => { jevStates[c.id] = c.state; results[c.id] = { answers: mockJev(c.state, jevCalls++) }; }); return J({ results, usage: {} }); }
     if (u.pathname === "/x") return J({ ca: { tweets: 6, uniqueAuthors: 4, tinyOrNewAuthorShare: 0.5, duplicateTextShare: 0.33, newestMinutesAgo: 12, sample: [] }, ticker: { tweets: 20, uniqueAuthors: 15 }, official: { handle: "coin1", followers: 1234 } });
   }
   if (/cdn\.dexscreener|coin-images|missing/.test(u.href)) return r.fulfill({ status: 404, body: "" });
@@ -219,6 +246,31 @@ try {
   const bad = cards.find((c) => c.text.includes("bonding curve not validated"));
   ok("unvalidated curve capped at C", bad && "CDF".includes(bad.grade), bad ? bad.grade : "missing");
   ok("duplicate ticker capped", cards.some((c) => c.text.includes("duplicate ticker") && "CDF".includes(c.grade)));
+  // Lock vaults
+  const vc = cards.find((c) => c.key === "solana:" + V.mint.str);
+  ok("vault coin: capped at C for supply in a lock vault", vc && "CDF".includes(vc.grade) && /Capped at C:.*26\.8% of the supply sits in a lock vault/.test(vc.text), vc ? vc.grade : "missing");
+  ok("vault coin: finding names payee, unlock date and cancel terms", vc && /26\.8% of the supply is locked in a Streamflow vault that pays the creator's wallet\. It all unlocks on [A-Z][a-z]{2} \d{1,2}, \d{4} \(in 30 days\)\. It can't be canceled early\./.test(vc.text), vc ? (vc.text.match(/26\.8% of the supply[^.]*\.[^.]*\.[^.]*\./) || [""])[0] : "");
+  ok("vault coin: creator line counts the locked share", vc && /not counting the 26\.8% locked for them/.test(vc.text));
+  ok("vault coin: top-10 line says vaults are excluded", vc && /excluding the pool and lock vaults/.test(vc.text));
+  const vInfo = await page.evaluate((k) => { const c = S.met.find((x) => x.key === k); return { holders: c.pillars.holders, json: window.trenchResults.shown.find((x) => x.address === c.address)?.lockVaults }; }, "solana:" + V.mint.str);
+  ok("vault coin: vault supply lowers the Holders pillar (25 without the vault, 12 with it)", vInfo.holders === 12, String(vInfo.holders));
+  ok("vault coin: JSON results carry the vault terms", vInfo.json?.[0]?.paysCreator === true && vInfo.json[0].senderCanCancel === false && /^20\d\d-/.test(vInfo.json[0].firstUnlock), JSON.stringify(vInfo.json));
+  const jv = jevStates["solana:" + V.mint.str]?.holders?.lockVaults?.[0];
+  ok("vault coin: Jev's evidence includes the vault", jv && jv.paysTo === "creator" && jv.termsKnown && Math.abs(jv.daysUntilFirstUnlock - 30) < 0.1 && jv.supplyPct === 26.8, JSON.stringify(jv));
+  const uc = cards.find((c) => /lock vault \(Jupiter Lock\)/.test(c.text));
+  ok("unreadable locker: says terms couldn't be read, still capped", uc && /12\.0% of the supply is held in a lock vault \(Jupiter Lock\)\. We couldn't read when it unlocks/.test(uc.text) && "CDF".includes(uc.grade) && /12\.0% of the supply sits in a lock vault/.test(uc.text), uc ? uc.grade : "missing");
+  const unit = await page.evaluate(() => {
+    const now = 2000000000, base = { start: now - 100 * 86400, cliff: now - 100 * 86400, cliffAmt: 0, deposited: 1000, period: 86400, perPeriod: 5, end: now + 100 * 86400, recipient: "R", sender: "S", cancelableBySender: true };
+    const vest = vaultView(base, "CREATOR", now);
+    const soon = vaultFinding({ pct: 20, name: "Streamflow Vault", terms: { start: now + 86400, cliff: now + 86400, cliffAmt: 1000, deposited: 1000, period: 1, perPeriod: 1000, end: now + 86400, recipient: "CREATOR", cancelableBySender: false } }, "CREATOR", now);
+    const far = vaultFinding({ pct: 3, name: "Streamflow Vault", terms: { start: now + 90 * 86400, cliff: now + 90 * 86400, cliffAmt: 1000, deposited: 1000, period: 1, perPeriod: 1000, end: now + 90 * 86400, recipient: "X", cancelableBySender: false } }, "CREATOR", now);
+    const ended = vaultFinding({ pct: 20, name: "Streamflow Vault", terms: { start: now - 86400, cliff: now - 86400, cliffAmt: 1000, deposited: 1000, period: 1, perPeriod: 1000, end: now - 86400, recipient: "CREATOR", cancelableBySender: false } }, "CREATOR", now);
+    const vestF = vaultFinding({ pct: 20, name: "Streamflow Vault", terms: base }, "CREATOR", now);
+    return { vest, soon, far, ended, vestF, wrongMint: decodeStreamflow(new Uint8Array(1104), "A", "B") };
+  });
+  ok("vesting schedule: kind and claimable share computed", unit.vest.kind === "vesting" && Math.round(unit.vest.claimableNowPct) === 50 && unit.vest.payoutIsCreator === false, JSON.stringify(unit.vest));
+  ok("vault finding levels: soon/ended/cancelable are red, small far lock is neutral", unit.soon.lvl === "r" && unit.ended.lvl === "r" && /can be claimed and sold at any time/.test(unit.ended.text) && unit.vestF.lvl === "r" && /take the tokens back/.test(unit.vestF.text) && unit.far.lvl === "n", JSON.stringify([unit.soon.lvl, unit.ended.lvl, unit.vestF.lvl, unit.far.lvl]));
+  ok("lock contract for a different coin is rejected", unit.wrongMint === null);
   ok("serial deployer capped", cards.some((c) => /serial deployer \(7/.test(c.text) && "CDF".includes(c.grade)));
   const allKeys = await page.evaluate(() => S.met.map((c) => ({ k: c.key, v: c.d.verdict, g: c.d.grade, note: c.d.verdictNote || "" })));
   const hp = allKeys.find((x) => x.k === "bsc:" + tokens[20].addr.toLowerCase());
