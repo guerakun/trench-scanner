@@ -1267,9 +1267,9 @@ function findings(c) {
     const holds = cp === null || cp === undefined ? "We couldn't see how much the creator holds" : cp < 0.05 ? "The creator holds almost none of the supply now" : `The creator holds ${cp.toFixed(cp < 1 ? 2 : 1)}% now`;
     const hist = pl === null || pl === undefined ? "" : pl === 0 ? ", and this is their first known launch" : pl >= 5 ? `, and has launched ${pl} other coins (a serial deployer)` : `, and has launched ${pl} other coin${pl > 1 ? "s" : ""}`;
     const forCreator = vs.filter((v) => v.terms && v.terms.recipient === h.creator).reduce((a, v) => a + v.pct, 0);
-    const locked = forCreator > 0 ? ` in their own wallet, not counting the ${forCreator.toFixed(1)}% locked for them` : "";
     const eff = (cp ?? 0) + forCreator;
-    add(pl >= 5 || eff >= 10 ? "r" : eff >= 5 ? "a" : "n", holds + locked + hist + ".");
+    const own = cp === null || cp === undefined ? "We couldn't see how much the creator's own wallet holds" : cp < 0.05 ? "The creator's own wallet holds almost none of the supply now" : `The creator's own wallet holds ${cp.toFixed(cp < 1 ? 2 : 1)}% now`;
+    add(pl >= 5 || eff >= 10 ? "r" : eff >= 5 ? "a" : "n", (forCreator > 0 ? `${own}, not counting the ${forCreator.toFixed(1)}% locked for them` : holds) + hist + ".");
     if (h.insiderNetworks || (h.insiderPct ?? 0) >= 1 || h.graphInsiders) {
       add((h.insiderPct ?? 0) >= 5 || h.insiderNetworks > 1 ? "r" : "a", `RugCheck flags linked insider wallets${h.insiderPct ? ` holding ${h.insiderPct.toFixed(1)}%` : ""}${h.insiderNetworks ? ` across ${h.insiderNetworks} network${h.insiderNetworks > 1 ? "s" : ""}` : ""}.`);
     } else if (s.checker === "rugcheck" && !s.partial) add("g", "RugCheck found no linked insider wallets.");
