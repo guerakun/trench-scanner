@@ -32,7 +32,7 @@ Roles, as Faisal set them:
 
 ### Caps applied after Jev (code, not negotiable)
 - Verdict FAIL → grade at most D.
-- Capped at C: unknown verdict; thin or unlocked LP on a coin under 24h; duplicate ticker (deepest-liquidity CA across the whole scan keeps the name); serial deployer (5+ prior launches); bonding curve not validated (four.meme curves can't be read yet, so they always hit this cap); RugCheck summary-only data; 10% or more of the supply in lock vaults.
+- Capped at C: unknown verdict; thin or unlocked LP on a coin under 24h; duplicate ticker (deepest-liquidity CA across the whole scan keeps the name); serial deployer (5+ prior launches); bonding curve not validated (four.meme curves can't be read yet, so they always hit this cap); RugCheck summary-only data; 10% or more of the supply in lock vaults; one unlocked wallet holding 10% or more (pools, curves, burn addresses and vaults excluded).
 
 ### Phase
 - Tie between phases → the rules-based phase if it's one of the tied options.

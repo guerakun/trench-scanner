@@ -726,6 +726,7 @@ function parseRugcheck(r) {
   const vaults = notMarket.filter(lockerOf).map((h) => ({ address: h.address, name: lockerOf(h), pct: num(h.pct) || 0, terms: null }));
   const holders = notMarket.filter((h) => !lockerOf(h));
   const pcts = holders.map((h) => num(h.pct) || 0);
+  const biggest = holders.reduce((m, h) => ((num(h.pct) || 0) > (num(m?.pct) || 0) ? h : m), null);
   const insiderPct = holders.filter((h) => h.insider).reduce((s, h) => s + (num(h.pct) || 0), 0);
   const nets = Array.isArray(r.insiderNetworks) ? r.insiderNetworks : [];
   const creatorTokens = Array.isArray(r.creatorTokens) ? r.creatorTokens.filter((t) => (t.mint || t.address) !== r.mint) : null;
@@ -741,7 +742,7 @@ function parseRugcheck(r) {
     honeypot: false, buyTax: null, sellTax: null,
     holders: {
       total: num(r.totalHolders),
-      top1: pcts.length ? Math.max(...pcts) : null,
+      top1: pcts.length ? Math.max(...pcts) : null, top1Wallet: biggest ? biggest.owner || biggest.address : null,
       top10: pcts.length ? pcts.slice(0, 10).reduce((a, b) => a + b, 0) : null,
       insiderPct: holders.length ? insiderPct : null,
       insiderNetworks: nets.length, insiderNetworkSize: nets.reduce((s, n) => s + (num(n.size) || num(n.activeAccounts) || 0), 0),
@@ -773,7 +774,9 @@ function parseGoPlus(d, chain, address) {
   const holders = (d.holders || []).filter((h) => !DEAD.test(h.address) && !isLocked(h));
   const vaults = (d.holders || []).filter((h) => !DEAD.test(h.address) && isLocked(h))
     .map((h) => ({ address: h.address, name: h.tag ? `${h.tag} locker` : "Locker contract", pct: (num(h.percent) || 0) * 100, terms: null, termsNote: "GoPlus doesn't report the unlock terms" }));
-  const pcts = holders.filter((h) => !(h.is_contract === 1 || h.is_contract === "1")).map((h) => (num(h.percent) || 0) * 100);
+  const wallets = holders.filter((h) => !(h.is_contract === 1 || h.is_contract === "1"));
+  const pcts = wallets.map((h) => (num(h.percent) || 0) * 100);
+  const biggest = wallets.reduce((m, h) => ((num(h.percent) || 0) > (num(m?.percent) || 0) ? h : m), null);
   let lpLockedPct = null;
   if (Array.isArray(d.lp_holders) && d.lp_holders.length) {
     lpLockedPct = d.lp_holders.reduce((s, h) => s + ((h.is_locked === 1 || h.is_locked === "1" || DEAD.test(h.address)) ? (num(h.percent) || 0) * 100 : 0), 0);
@@ -807,7 +810,7 @@ function parseGoPlus(d, chain, address) {
     mintAuthority: false, freezeAuthority: false, mintable: f("is_mintable"), pausable: f("transfer_pausable"),
     ownerChangeBalance: f("owner_change_balance"), hiddenOwner: f("hidden_owner"), proxy: f("is_proxy"), openSource: d.is_open_source === "1",
     holders: {
-      total: n("holder_count"), top1: pcts.length ? Math.max(...pcts) : null, top10: pcts.length ? pcts.slice(0, 10).reduce((a, b) => a + b, 0) : null,
+      total: n("holder_count"), top1: pcts.length ? Math.max(...pcts) : null, top1Wallet: biggest ? biggest.address : null, top10: pcts.length ? pcts.slice(0, 10).reduce((a, b) => a + b, 0) : null,
       insiderPct: null, insiderNetworks: 0, graphInsiders: null,
       creatorPct: n("creator_percent") !== null ? n("creator_percent") * 100 : null, creator: d.creator_address || null,
       ownerPct: n("owner_percent") !== null ? n("owner_percent") * 100 : null,
@@ -903,6 +906,7 @@ async function readCurves(coins) {
 const STRM_PROGRAM = "strmRqUCoQUgGUan5YhzUZa6KqdzwX5L6FpUxfmKg5m";
 const VAULT_SHOW_PCT = 1;    // smaller vaults are ignored
 const VAULT_CAP_PCT = 10;    // this much supply in lock vaults caps the grade at C
+const WHALE_CAP_PCT = 10;    // one unlocked wallet holding this much caps the grade at C
 const B58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 function b58(bytes) {
   let n = 0n; for (const b of bytes) n = n * 256n + BigInt(b);
@@ -1168,6 +1172,8 @@ function capsFor(c, dupeLosers) {
   if (c.sec?.partial) caps.push("security report partial (RugCheck summary only)");
   const vp = vaultPctOf(c);
   if (vp >= VAULT_CAP_PCT) caps.push(`${vp.toFixed(1)}% of the supply sits in a lock vault`);
+  const t1 = c.sec?.ok ? c.sec.holders.top1 : null;   // pools, curves, burn addresses and lock vaults are already excluded
+  if (t1 !== null && t1 !== undefined && t1 >= WHALE_CAP_PCT) caps.push(`one wallet holds ${t1.toFixed(1)}% of the supply, unlocked`);
   return caps;
 }
 
@@ -1258,7 +1264,8 @@ function findings(c) {
     if (h.top10 < 20) add("g", `The top 10 wallets hold ${t}% of the supply (${excl}). ${vs.length ? "Outside the vault, supply" : "Supply"} is fairly spread out.`);
     else if (h.top10 <= 35) add("a", `The top 10 wallets hold ${t}% of the supply (${excl}). A few wallets can move the price.`);
     else add("r", `The top 10 wallets hold ${t}% of the supply (${excl}). A handful of wallets could crash the price.`);
-    if ((h.top1 ?? 0) >= 5) add(h.top1 >= 10 ? "r" : "a", `The biggest single wallet holds ${h.top1.toFixed(1)}%.`);
+    if ((h.top1 ?? 0) >= WHALE_CAP_PCT) add("r", `One wallet${h.top1Wallet ? ` (${short(h.top1Wallet)})` : ""} holds ${h.top1.toFixed(1)}% of the supply and it isn't locked, so it could be sold at any time.`);
+    else if ((h.top1 ?? 0) >= 5) add("a", `The biggest single wallet holds ${h.top1.toFixed(1)}%.`);
   } else add("n", "Holder data isn't available for this coin, so concentration is unknown.");
   for (const v of vs.slice(0, 2)) out.push(vaultFinding(v, h.creator));
   if (vs.length > 2) add("a", `${vs.length - 2} more lock vault${vs.length > 3 ? "s" : ""} hold another ${vs.slice(2).reduce((a, v) => a + v.pct, 0).toFixed(1)}%.`);

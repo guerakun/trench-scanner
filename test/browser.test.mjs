@@ -46,6 +46,7 @@ const STRM = "strmRqUCoQUgGUan5YhzUZa6KqdzwX5L6FpUxfmKg5m";
 const V = { mint: key32("vault-mint"), vault: key32("vault-escrow"), meta: key32("vault-meta"), creator: key32("vault-creator") };
 const UNLOCK = Math.floor(Date.now() / 1000) + 30 * 86400 + 600;
 tokens[10].addr = V.mint.str; tokens[10].vault = "streamflow";   // creator locked 26.8% to themselves, readable terms
+tokens[16].whale = 14;                                           // one unlocked wallet holds 14%
 tokens[13].vault = "other";                                      // 12% in a locker whose terms can't be read
 function streamflowMeta() {
   const b = Buffer.alloc(1104); b.writeBigUInt64LE(4n, 0); b[8] = 4;
@@ -94,6 +95,7 @@ function rugReport(mint) {
     creatorBalance: 0,
     ...(t.vault === "streamflow" ? { creator: V.creator.str, knownAccounts: { [V.vault.str]: { name: "Streamflow Vault", type: "LOCKER" } } } : {}),
     ...(t.vault === "other" ? { knownAccounts: { LOCKX: { name: "Jupiter Lock", type: "LOCKER" } } } : {}),
+    ...(t.whale ? { topHolders: [{ address: "CURVEACC", owner: curvePk, pct: 40, insider: false }, { address: "WhaleTokenAcct", owner: "WhaLe1111111111111111111111111111111111Big", pct: t.whale, insider: false }, ...Array.from({ length: 10 }, (_, k) => ({ address: "H" + k, owner: "O" + k, pct: 1.1, insider: false }))] } : {}),
     ...(t.vault ? { topHolders: [{ address: "CURVEACC", owner: curvePk, pct: 40, insider: false }, t.vault === "streamflow" ? { address: V.vault.str, owner: V.vault.str, pct: 26.8, insider: false } : { address: "LOCKX", owner: "LOCKX", pct: 12, insider: false }, ...Array.from({ length: 10 }, (_, k) => ({ address: "H" + k, owner: "O" + k, pct: 1.2, insider: false }))] } : {}),
   };
 }
@@ -271,6 +273,11 @@ try {
   ok("vesting schedule: kind and claimable share computed", unit.vest.kind === "vesting" && Math.round(unit.vest.claimableNowPct) === 50 && unit.vest.payoutIsCreator === false, JSON.stringify(unit.vest));
   ok("vault finding levels: soon/ended/cancelable are red, small far lock is neutral", unit.soon.lvl === "r" && unit.ended.lvl === "r" && /can be claimed and sold at any time/.test(unit.ended.text) && unit.vestF.lvl === "r" && /take the tokens back/.test(unit.vestF.text) && unit.far.lvl === "n", JSON.stringify([unit.soon.lvl, unit.ended.lvl, unit.vestF.lvl, unit.far.lvl]));
   ok("lock contract for a different coin is rejected", unit.wrongMint === null);
+  const wc = cards.find((c) => /one wallet holds 14\.0% of the supply, unlocked/.test(c.text));
+  ok("single unlocked wallet at 10%+ caps the grade at C", wc && "CDF".includes(wc.grade) && /Capped at C:/.test(wc.text), wc ? wc.grade : "missing");
+  ok("whale finding names the wallet and says it's unlocked", wc && /One wallet \(WhaL…1Big\) holds 14\.0% of the supply and it isn't locked, so it could be sold at any time\./.test(wc.text));
+  const noFalseWhale = await page.evaluate(() => S.met.filter((c) => c.caps.some((x) => /one wallet holds/.test(x))).map((c) => c.sec.holders.top1));
+  ok("whale cap only fires at 10% or more (pool and vault holders don't count)", noFalseWhale.length === 1 && noFalseWhale[0] === 14, JSON.stringify(noFalseWhale));
   ok("serial deployer capped", cards.some((c) => /serial deployer \(7/.test(c.text) && "CDF".includes(c.grade)));
   const allKeys = await page.evaluate(() => S.met.map((c) => ({ k: c.key, v: c.d.verdict, g: c.d.grade, note: c.d.verdictNote || "" })));
   const hp = allKeys.find((x) => x.k === "bsc:" + tokens[20].addr.toLowerCase());
