@@ -6,6 +6,7 @@ A small Cloudflare Worker that keeps your keys off the page:
 | --- | --- |
 | `GET /health` | Shows whether Jev and the X layer are configured |
 | `POST /jev` | Sends each coin's prepared evidence to Jev with the fixed question set in `src/questions.js` |
+| `POST /jev/claim` | Weighs a YES case against a NO case for any claim, with a fixed question set. Runs twice (each case listed first once) and averages |
 | `GET /x` | Optional: who tweets the CA, `$TICKER` breadth, the official account's followers (cached 1h) |
 | `GET/POST /relay` | Read-only fallback for the public data APIs if a browser call is blocked (allowlisted hosts only) |
 

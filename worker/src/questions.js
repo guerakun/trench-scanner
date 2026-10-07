@@ -5,7 +5,7 @@
 //
 // Bump QUESTIONS_VERSION whenever wording changes, so cached answers expire.
 
-export const QUESTIONS_VERSION = "2026-09-30.1";
+export const QUESTIONS_VERSION = "2026-10-07.1";
 
 export const QUESTIONS = {
   verdict: {
@@ -181,3 +181,38 @@ export function schema() {
   }
   return { version: QUESTIONS_VERSION, questions: out };
 }
+
+// ------------------------------------------------------------------ yes/no claim check
+// A second fixed question set, for weighing a YES case against a NO case on any claim.
+// The caller supplies the claim, a horizon, neutral facts and the two cases; the questions are fixed.
+export const CLAIM_QUESTIONS = {
+  outcome: {
+    type: "noul",
+    instructions: "Will the claim in `claim` turn out to be true within the period in `horizon`? Weigh `facts` first, then the arguments in `yesCase` and `noCase`. Judge the arguments by how well `facts` support them, not by how many there are or how confidently they are worded.",
+    criteria: { true: "The claim is true at the end of the period described in `horizon`.", false: "The claim is not true at the end of that period." }
+  },
+  outcome_facts_only: {
+    type: "noul",
+    instructions: "Using only the neutral data in `facts`, and disregarding the arguments in `yesCase` and `noCase`, will the claim in `claim` turn out to be true within the period in `horizon`?"
+  },
+  stronger_case: {
+    type: "choice",
+    instructions: "Which side is better supported by `facts`: the arguments in `yesCase` that the claim will be true, or the arguments in `noCase` that it will not?",
+    criteria: {
+      yes_case: "The YES arguments are clearly better supported by the facts.",
+      no_case: "The NO arguments are clearly better supported by the facts.",
+      evenly_matched: "Both sides are about equally supported.",
+      not_enough_evidence: "The facts are too thin to favor either side."
+    }
+  },
+  yes_strength: {
+    type: "score",
+    instructions: "How well do the facts in `facts` support the arguments in `yesCase`?",
+    criteria: ["Not supported: the facts contradict them or are silent", "Weakly supported: plausible but mostly assertion", "Partly supported: some facts back them, with gaps", "Well supported: most arguments rest on specific facts", "Strongly supported: specific facts back nearly every argument"]
+  },
+  no_strength: {
+    type: "score",
+    instructions: "How well do the facts in `facts` support the arguments in `noCase`?",
+    criteria: ["Not supported: the facts contradict them or are silent", "Weakly supported: plausible but mostly assertion", "Partly supported: some facts back them, with gaps", "Well supported: most arguments rest on specific facts", "Strongly supported: specific facts back nearly every argument"]
+  }
+};

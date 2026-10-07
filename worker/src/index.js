@@ -14,7 +14,7 @@
 //   GET  /x?ca=&sym=&handle=
 //   GET  /relay?u=<url>  |  POST /relay?u=<solana rpc url>  (allowlisted hosts)
 
-import { QUESTIONS, QUESTIONS_VERSION, schema, questionsFor } from "./questions.js";
+import { QUESTIONS, QUESTIONS_VERSION, schema, questionsFor, CLAIM_QUESTIONS } from "./questions.js";
 
 const TYPESAFE_URL = "https://api.typesafe.ai/v1/systemone";
 const TYPESAFE_MODEL = "jev-latest";
@@ -51,7 +51,7 @@ export default {
     }
 
     // Per-IP rate limit on the paid endpoints (Cloudflare rate-limit binding, see wrangler.toml).
-    if ((url.pathname === "/jev" || url.pathname === "/x") && env.LIMITER) {
+    if ((url.pathname === "/jev" || url.pathname === "/jev/claim" || url.pathname === "/x") && env.LIMITER) {
       const ip = request.headers.get("CF-Connecting-IP") || "unknown";
       const { success } = await env.LIMITER.limit({ key: url.pathname + ":" + ip });
       if (!success) return json({ error: "rate limited by the Worker, wait a minute" }, 429, cors);
@@ -68,6 +68,7 @@ export default {
       }
       if (url.pathname === "/jev/schema") return json(schema(), 200, cors);
       if (url.pathname === "/jev" && request.method === "POST") return await handleJev(request, env, ctx, cors);
+      if (url.pathname === "/jev/claim" && request.method === "POST") return await handleClaim(request, env, ctx, cors);
       if (url.pathname === "/x" && request.method === "GET") return await handleX(url, env, ctx, cors);
       if (url.pathname === "/relay") return await handleRelay(request, url, ctx, cors);
       return json({ error: "not found" }, 404, cors);
@@ -109,6 +110,43 @@ async function handleJev(request, env, ctx, cors) {
   });
 
   return json({ results, usage, questionsVersion: QUESTIONS_VERSION }, 200, cors);
+}
+
+// ---------------------------------------------------------------- yes/no claim check
+// POST /jev/claim { claim, horizon, facts, yes: [..], no: [..] }
+// Asks the fixed CLAIM_QUESTIONS twice, once with the YES case listed first and once with the NO
+// case first, so the order the cases are presented in can be seen and averaged out.
+async function handleClaim(request, env, ctx, cors) {
+  if (!env.TYPESAFE_API_KEY) return json({ error: "TYPESAFE_API_KEY secret is not set" }, 503, cors);
+  const b = await request.json().catch(() => null);
+  const text = (x, n) => (typeof x === "string" ? x.trim().slice(0, n) : "");
+  const list = (x) => (Array.isArray(x) ? x.map((a) => text(a, 500)).filter(Boolean).slice(0, 10) : []);
+  const claim = text(b?.claim, 400), horizon = text(b?.horizon, 300), yes = list(b?.yes), no = list(b?.no);
+  if (!claim || !horizon || !yes.length || !no.length) return json({ error: "expected { claim, horizon, facts, yes: [..], no: [..] }" }, 400, cors);
+  const facts = b.facts ?? null;
+  if (JSON.stringify(facts).length > 8000) return json({ error: "facts too large" }, 400, cors);
+
+  const orders = [
+    { order: "yes_first", state: { claim, horizon, facts, yesCase: yes, noCase: no } },
+    { order: "no_first", state: { claim, horizon, facts, noCase: no, yesCase: yes } },
+  ];
+  const runs = await Promise.all(orders.map(async ({ order, state }) => {
+    const res = await callJev(env.TYPESAFE_API_KEY, state, CLAIM_QUESTIONS);
+    return res.error ? { order, error: res.error } : { order, answers: normalizeAnswers(res.answers, CLAIM_QUESTIONS), usage: res.usage };
+  }));
+  const good = runs.filter((r) => r.answers);
+  if (!good.length) return json({ error: runs[0].error || "jev failed", runs }, 502, cors);
+  const avg = (f) => { const v = good.map(f).filter((x) => Number.isFinite(x)); return v.length ? Math.round((v.reduce((a, c) => a + c, 0) / v.length) * 1000) / 1000 : null; };
+  const sides = ["yes_case", "no_case", "evenly_matched", "not_enough_evidence"];
+  const summary = {
+    pYes: avg((r) => r.answers.outcome?.noul),
+    pYesFactsOnly: avg((r) => r.answers.outcome_facts_only?.noul),
+    orderSpread: good.length === 2 ? Math.round(Math.abs(good[0].answers.outcome?.noul - good[1].answers.outcome?.noul) * 1000) / 1000 : null,
+    strongerCase: Object.fromEntries(sides.map((k) => [k, avg((r) => r.answers.stronger_case?.probabilities?.[k] ?? 0)])),
+    yesStrength: avg((r) => r.answers.yes_strength?.fraction),
+    noStrength: avg((r) => r.answers.no_strength?.fraction),
+  };
+  return json({ summary, runs, questionsVersion: QUESTIONS_VERSION, note: "Jev weighs the evidence it is given. This is not a forecast with a track record." }, 200, cors);
 }
 
 async function callJev(apiKey, state, questions = QUESTIONS) {

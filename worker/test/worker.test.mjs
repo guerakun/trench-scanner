@@ -15,8 +15,13 @@ globalThis.fetch = async (url, init = {}) => {
     if (fail429-- > 0) return new Response("slow down", { status: 429 });
     const body = JSON.parse(init.body);
     assert.equal(body.model, "jev-latest");
-    assert.ok(body.questions.grade && body.questions.verdict);
+    assert.ok((body.questions.grade && body.questions.verdict) || body.questions.outcome);
     assert.equal(init.headers.Authorization, "Bearer test-key");
+    if (body.questions.outcome) {
+      assert.deepEqual(Object.keys(body.questions).sort(), ["no_strength", "outcome", "outcome_facts_only", "stronger_case", "yes_strength"]);
+      const yesFirst = Object.keys(body.state).indexOf("yesCase") < Object.keys(body.state).indexOf("noCase");
+      return Response.json({ model: "jev-1.13", answers: { outcome: { noul: yesFirst ? 0.4 : 0.3 }, outcome_facts_only: { noul: 0.25 }, stronger_case: { choice: "no_case", probabilities: { yes_case: 0.2, no_case: 0.6, evenly_matched: 0.2, not_enough_evidence: 0 } }, yes_strength: { probabilities: { 2: 1 } }, no_strength: { probabilities: { 3: 1 } } }, usage: { input_tokens: 500 } });
+    }
     if (body.questions.thesis) {
       assert.deepEqual(Object.keys(body.questions.thesis.criteria), ["d1", "d2", "none"]);
       assert.equal(body.state.thesisCandidates, undefined, "candidates stripped from state");
@@ -101,6 +106,17 @@ r = await req("/jev", { method: "POST", body: JSON.stringify({ coins: [{ id: "t1
 j = await r.json();
 assert.equal(j.results.t1.answers.thesis.choice, "d2", "thesis choice normalised to candidate id");
 assert.equal(j.results.t1.answers.narrative.choice, "animal_pet");
+r = await req("/jev/claim", { method: "POST", body: JSON.stringify({ claim: "X closes above 6.50", horizon: "by tomorrow", facts: { last: 6.49 }, yes: ["momentum"], no: ["resistance", "x".repeat(900)] }) });
+j = await r.json();
+assert.equal(r.status, 200);
+assert.equal(j.summary.pYes, 0.35, "averaged over both orders");
+assert.equal(j.summary.orderSpread, 0.1);
+assert.equal(j.summary.pYesFactsOnly, 0.25);
+assert.equal(j.summary.strongerCase.no_case, 0.6);
+assert.equal(j.summary.yesStrength, 0.5); assert.equal(j.summary.noStrength, 0.75);
+assert.equal(j.runs.length, 2);
+r = await req("/jev/claim", { method: "POST", body: JSON.stringify({ claim: "X", horizon: "soon", yes: [], no: ["a"] }) });
+assert.equal(r.status, 400, "both cases required");
 limited = 1;
 r = await req("/x?ca=So11111111111111111111111111111111111111112");
 assert.equal(r.status, 429, "rate limiter enforced");
